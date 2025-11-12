@@ -1,0 +1,1987 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>cmd: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">tasklog/cmd/init.go (0.0%)</option>
+				
+				<option value="file1">tasklog/cmd/log.go (0.0%)</option>
+				
+				<option value="file2">tasklog/cmd/root.go (0.0%)</option>
+				
+				<option value="file3">tasklog/cmd/summary.go (0.0%)</option>
+				
+				<option value="file4">tasklog/cmd/sync.go (0.0%)</option>
+				
+				<option value="file5">tasklog/internal/config/config.go (83.0%)</option>
+				
+				<option value="file6">tasklog/internal/jira/client.go (8.2%)</option>
+				
+				<option value="file7">tasklog/internal/storage/storage.go (81.8%)</option>
+				
+				<option value="file8">tasklog/internal/tempo/client.go (13.8%)</option>
+				
+				<option value="file9">tasklog/internal/timeparse/timeparse.go (89.2%)</option>
+				
+				<option value="file10">tasklog/internal/ui/prompts.go (0.0%)</option>
+				
+				<option value="file11">tasklog/main.go (0.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package cmd
+
+import (
+        "fmt"
+        "os"
+        "path/filepath"
+
+        "tasklog/internal/config"
+
+        "github.com/spf13/cobra"
+)
+
+var initCmd = &amp;cobra.Command{
+        Use:   "init",
+        Short: "Initialize tasklog configuration",
+        Long:  `Creates the configuration directory and an example config file at ~/.tasklog/config.yaml`,
+        RunE:  runInit,
+}
+
+func init() <span class="cov0" title="0">{
+        rootCmd.AddCommand(initCmd)
+}</span>
+
+func runInit(cmd *cobra.Command, args []string) error <span class="cov0" title="0">{
+        // Ensure config directory exists
+        if err := config.EnsureConfigDir(); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to create config directory: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">homeDir, err := os.UserHomeDir()
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to get home directory: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">configPath := filepath.Join(homeDir, ".tasklog", "config.yaml")
+
+        // Check if config already exists
+        if _, err := os.Stat(configPath); err == nil </span><span class="cov0" title="0">{
+                fmt.Printf("Config file already exists at: %s\n", configPath)
+                fmt.Println("To reinitialize, delete the existing file and run this command again.")
+                return nil
+        }</span>
+
+        // Read example config from current directory
+        <span class="cov0" title="0">examplePath := "config.example.yaml"
+        exampleData, err := os.ReadFile(examplePath)
+        if err != nil </span><span class="cov0" title="0">{
+                // If example doesn't exist in current directory, create a basic one
+                exampleData = []byte(`# Tasklog Configuration
+# Fill in your credentials below
+
+# Required: Jira configuration
+jira:
+  url: "https://your-domain.atlassian.net"
+  username: "your-email@example.com"
+  api_token: "your-jira-api-token"
+  project_key: "PROJ"  # Project key to filter tasks
+
+# Required: Tempo configuration
+tempo:
+  api_token: "your-tempo-api-token"
+
+# Optional: Filter labels that can be used for time logging
+labels:
+  allowed_labels:
+    - "development"
+    - "code-review"
+    - "meeting"
+    - "testing"
+    - "documentation"
+    - "bug-fix"
+
+# Optional: Define shortcuts for quick time logging
+shortcuts:
+  - name: "daily"
+    task: "PROJ-123"
+    time: "30m"
+    label: "meeting"
+  
+  - name: "standup"
+    task: "PROJ-123"
+    time: "15m"
+    label: "meeting"
+
+# Optional: Database path (defaults to ~/.tasklog/tasklog.db)
+database:
+  path: ""
+`)
+        }</span>
+
+        // Write config file
+        <span class="cov0" title="0">if err := os.WriteFile(configPath, exampleData, 0600); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to create config file: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">fmt.Println("✓ Configuration initialized successfully!")
+        fmt.Printf("\nConfig file created at: %s\n", configPath)
+        fmt.Println("\nNext steps:")
+        fmt.Println("1. Edit the config file with your Jira and Tempo credentials")
+        fmt.Println("2. Set the Jira project_key for your project (required)")
+        fmt.Println("3. Get your Jira API token: https://id.atlassian.com/manage-profile/security/api-tokens")
+        fmt.Println("4. Get your Tempo API token from Tempo &gt; Settings &gt; API Integration")
+        fmt.Println("5. (Optional) Configure labels and shortcuts")
+        fmt.Printf("6. Run: tasklog log\n")
+
+        return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package cmd
+
+import (
+        "fmt"
+        "time"
+
+        "github.com/rs/zerolog/log"
+        "github.com/spf13/cobra"
+
+        "tasklog/internal/jira"
+        "tasklog/internal/storage"
+        "tasklog/internal/tempo"
+        "tasklog/internal/timeparse"
+        "tasklog/internal/ui"
+)
+
+var (
+        shortcutName string
+        taskKey      string
+        timeSpent    string
+        label        string
+)
+
+var logCmd = &amp;cobra.Command{
+        Use:   "log",
+        Short: "Log time to a task",
+        Long: `Interactively log time to a Jira task. 
+You can use shortcuts, select from in-progress tasks, or search for tasks.`,
+        RunE: runLog,
+}
+
+func init() <span class="cov0" title="0">{
+        rootCmd.AddCommand(logCmd)
+
+        logCmd.Flags().StringVarP(&amp;shortcutName, "shortcut", "s", "", "Use a predefined shortcut")
+        logCmd.Flags().StringVarP(&amp;taskKey, "task", "t", "", "Task key (e.g., PROJ-123)")
+        logCmd.Flags().StringVarP(&amp;timeSpent, "time", "d", "", "Time spent (e.g., 2h 30m, 2.5h, 150m)")
+        logCmd.Flags().StringVarP(&amp;label, "label", "l", "", "Work log label")
+}</span>
+
+func runLog(cmd *cobra.Command, args []string) error <span class="cov0" title="0">{
+        // Load configuration
+        cfg, err := checkConfig()
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        // Initialize clients
+        <span class="cov0" title="0">jiraClient := jira.NewClient(cfg.Jira.URL, cfg.Jira.Username, cfg.Jira.APIToken, cfg.Jira.ProjectKey)
+        tempoClient := tempo.NewClient(cfg.Tempo.APIToken)
+
+        // Initialize storage
+        store, err := storage.NewStorage(cfg.Database.Path)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to initialize storage: %w", err)
+        }</span>
+        <span class="cov0" title="0">defer store.Close()
+
+        var selectedIssue *jira.Issue
+        var timeSeconds int
+        var selectedLabel string
+
+        // Check if using a shortcut
+        if shortcutName != "" </span><span class="cov0" title="0">{
+                log.Debug().Str("shortcut", shortcutName).Msg("Using shortcut")
+
+                shortcut, found := cfg.GetShortcut(shortcutName)
+                if !found </span><span class="cov0" title="0">{
+                        return fmt.Errorf("shortcut '%s' not found in configuration", shortcutName)
+                }</span>
+
+                // Use shortcut values
+                <span class="cov0" title="0">if taskKey == "" </span><span class="cov0" title="0">{
+                        taskKey = shortcut.Task
+                }</span>
+                <span class="cov0" title="0">if timeSpent == "" &amp;&amp; shortcut.Time != "" </span><span class="cov0" title="0">{
+                        timeSpent = shortcut.Time
+                }</span>
+                <span class="cov0" title="0">if label == "" </span><span class="cov0" title="0">{
+                        label = shortcut.Label
+                }</span>
+        }
+
+        // Get task
+        <span class="cov0" title="0">if taskKey != "" </span><span class="cov0" title="0">{
+                log.Debug().Str("task", taskKey).Msg("Fetching specified task")
+                issue, err := jiraClient.GetIssue(taskKey)
+                if err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("failed to fetch task %s: %w", taskKey, err)
+                }</span>
+                <span class="cov0" title="0">selectedIssue = issue
+                fmt.Printf("Task: %s - %s\n", selectedIssue.Key, selectedIssue.Fields.Summary)</span>
+        } else<span class="cov0" title="0"> {
+                // Interactive task selection
+                log.Debug().Msg("Fetching in-progress tasks")
+                inProgressIssues, err := jiraClient.GetInProgressIssues()
+                if err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("failed to fetch in-progress tasks: %w", err)
+                }</span>
+
+                <span class="cov0" title="0">selectedIssue, err = ui.SelectTask(inProgressIssues)
+                if err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("failed to select task: %w", err)
+                }</span>
+
+                // If user chose to search, perform the search
+                <span class="cov0" title="0">if selectedIssue.Fields.Summary == "" </span><span class="cov0" title="0">{
+                        searchResults, err := jiraClient.SearchIssues(selectedIssue.Key)
+                        if err != nil </span><span class="cov0" title="0">{
+                                return fmt.Errorf("failed to search tasks: %w", err)
+                        }</span>
+
+                        <span class="cov0" title="0">selectedIssue, err = ui.SelectFromSearchResults(searchResults)
+                        if err != nil </span><span class="cov0" title="0">{
+                                return fmt.Errorf("failed to select from search results: %w", err)
+                        }</span>
+
+                        // Fetch full issue details
+                        <span class="cov0" title="0">issue, err := jiraClient.GetIssue(selectedIssue.Key)
+                        if err != nil </span><span class="cov0" title="0">{
+                                return fmt.Errorf("failed to fetch task details: %w", err)
+                        }</span>
+                        <span class="cov0" title="0">selectedIssue = issue</span>
+                }
+        }
+
+        // Get time spent
+        <span class="cov0" title="0">if timeSpent != "" </span><span class="cov0" title="0">{
+                timeSeconds, err = timeparse.Parse(timeSpent)
+                if err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("invalid time format: %w", err)
+                }</span>
+        } else<span class="cov0" title="0"> {
+                timeStr, err := ui.PromptTimeSpent()
+                if err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("failed to get time spent: %w", err)
+                }</span>
+
+                <span class="cov0" title="0">timeSeconds, err = timeparse.Parse(timeStr)
+                if err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("invalid time format: %w", err)
+                }</span>
+        }
+
+        // Get label
+        <span class="cov0" title="0">if label != "" </span><span class="cov0" title="0">{
+                if !cfg.IsLabelAllowed(label) </span><span class="cov0" title="0">{
+                        return fmt.Errorf("label '%s' is not in the allowed labels list", label)
+                }</span>
+                <span class="cov0" title="0">selectedLabel = label</span>
+        } else<span class="cov0" title="0"> {
+                selectedLabel, err = ui.SelectLabel(cfg.Labels.AllowedLabels)
+                if err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("failed to select label: %w", err)
+                }</span>
+
+                <span class="cov0" title="0">if !cfg.IsLabelAllowed(selectedLabel) </span><span class="cov0" title="0">{
+                        return fmt.Errorf("label '%s' is not allowed", selectedLabel)
+                }</span>
+        }
+
+        // Get optional comment
+        <span class="cov0" title="0">comment, err := ui.PromptComment()
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to get comment: %w", err)
+        }</span>
+
+        // Confirm before logging
+        <span class="cov0" title="0">fmt.Printf("\n")
+        fmt.Printf("Task:    %s - %s\n", selectedIssue.Key, selectedIssue.Fields.Summary)
+        fmt.Printf("Time:    %s\n", timeparse.Format(timeSeconds))
+        fmt.Printf("Label:   %s\n", selectedLabel)
+        if comment != "" </span><span class="cov0" title="0">{
+                fmt.Printf("Comment: %s\n", comment)
+        }</span>
+        <span class="cov0" title="0">fmt.Printf("\n")
+
+        confirmed, err := ui.Confirm("Log this time entry?")
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to confirm: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">if !confirmed </span><span class="cov0" title="0">{
+                fmt.Println("Cancelled.")
+                return nil
+        }</span>
+
+        // Create time entry
+        <span class="cov0" title="0">now := time.Now()
+        entry := &amp;storage.TimeEntry{
+                IssueKey:         selectedIssue.Key,
+                IssueSummary:     selectedIssue.Fields.Summary,
+                TimeSpentSeconds: timeSeconds,
+                TimeSpent:        timeparse.Format(timeSeconds),
+                Label:            selectedLabel,
+                Comment:          comment,
+                Started:          now,
+                SyncedToJira:     false,
+                SyncedToTempo:    false,
+        }
+
+        // Save to local storage first
+        if err := store.AddTimeEntry(entry); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to save time entry locally: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">fmt.Println("✓ Saved to local cache")
+
+        // Log to Jira
+        log.Debug().Msg("Logging to Jira")
+        worklog, err := jiraClient.AddWorklog(selectedIssue.Key, timeSeconds, now, comment)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Error().Err(err).Msg("Failed to log to Jira")
+                fmt.Printf("⚠ Failed to log to Jira: %v\n", err)
+        }</span> else<span class="cov0" title="0"> {
+                entry.SyncedToJira = true
+                entry.JiraWorklogID = worklog.ID
+                fmt.Println("✓ Logged to Jira")
+        }</span>
+
+        // Log to Tempo
+        <span class="cov0" title="0">log.Debug().Msg("Logging to Tempo")
+        tempoWorklog, err := tempoClient.AddWorklog(selectedIssue.Key, timeSeconds, now, selectedLabel, comment)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Error().Err(err).Msg("Failed to log to Tempo")
+                fmt.Printf("⚠ Failed to log to Tempo: %v\n", err)
+        }</span> else<span class="cov0" title="0"> {
+                entry.SyncedToTempo = true
+                entry.TempoWorklogID = fmt.Sprintf("%d", tempoWorklog.TempoWorklogID)
+                fmt.Println("✓ Logged to Tempo")
+        }</span>
+
+        // Update storage with sync status
+        <span class="cov0" title="0">if err := store.UpdateTimeEntry(entry); err != nil </span><span class="cov0" title="0">{
+                log.Error().Err(err).Msg("Failed to update time entry sync status")
+        }</span>
+
+        // Show today's summary
+        <span class="cov0" title="0">fmt.Println()
+        if err := showTodaySummary(store); err != nil </span><span class="cov0" title="0">{
+                log.Error().Err(err).Msg("Failed to show summary")
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+func showTodaySummary(store *storage.Storage) error <span class="cov0" title="0">{
+        total, err := store.GetTodayTotalSeconds()
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov0" title="0">entries, err := store.GetTodayEntries()
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov0" title="0">fmt.Println("═══════════════════════════════════════════")
+        fmt.Printf("Today's Summary (%d entries)\n", len(entries))
+        fmt.Println("═══════════════════════════════════════════")
+
+        if len(entries) &gt; 0 </span><span class="cov0" title="0">{
+                for _, entry := range entries </span><span class="cov0" title="0">{
+                        syncStatus := ""
+                        if entry.SyncedToJira &amp;&amp; entry.SyncedToTempo </span><span class="cov0" title="0">{
+                                syncStatus = "✓"
+                        }</span> else<span class="cov0" title="0"> if entry.SyncedToJira || entry.SyncedToTempo </span><span class="cov0" title="0">{
+                                syncStatus = "⚠"
+                        }</span> else<span class="cov0" title="0"> {
+                                syncStatus = "✗"
+                        }</span>
+
+                        <span class="cov0" title="0">fmt.Printf("%s %s - %-10s [%s] %s\n",
+                                syncStatus,
+                                entry.Started.Format("15:04"),
+                                entry.TimeSpent,
+                                entry.Label,
+                                entry.IssueKey,
+                        )</span>
+                }
+        }
+
+        <span class="cov0" title="0">fmt.Println("───────────────────────────────────────────")
+        fmt.Printf("Total: %s\n", timeparse.Format(total))
+        fmt.Println("═══════════════════════════════════════════")
+
+        return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package cmd
+
+import (
+        "fmt"
+        "os"
+
+        "tasklog/internal/config"
+
+        "github.com/rs/zerolog/log"
+        "github.com/spf13/cobra"
+)
+
+var rootCmd = &amp;cobra.Command{
+        Use:   "tasklog",
+        Short: "Interactive time tracking tool with Jira and Tempo integration",
+        Long: `Tasklog is an interactive CLI tool for tracking time on Jira tasks.
+It integrates with Jira Cloud API and Tempo to help you log time efficiently.`,
+        Version: "1.0.0",
+}
+
+// Execute runs the root command
+func Execute() error <span class="cov0" title="0">{
+        return rootCmd.Execute()
+}</span>
+
+func init() <span class="cov0" title="0">{
+        cobra.OnInitialize(initConfig)
+}</span>
+
+func initConfig() <span class="cov0" title="0">{
+        // Ensure config directory exists
+        if err := config.EnsureConfigDir(); err != nil </span><span class="cov0" title="0">{
+                log.Error().Err(err).Msg("Failed to ensure config directory")
+        }</span>
+}
+
+func checkConfig() (*config.Config, error) <span class="cov0" title="0">{
+        cfg, err := config.Load()
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, "Error: %v\n\n", err)
+                fmt.Fprintf(os.Stderr, "Please create a config file at ~/.tasklog/config.yaml\n")
+                fmt.Fprintf(os.Stderr, "See config.example.yaml for an example configuration.\n")
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return cfg, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package cmd
+
+import (
+        "fmt"
+
+        "github.com/spf13/cobra"
+
+        "tasklog/internal/storage"
+)
+
+var summaryCmd = &amp;cobra.Command{
+        Use:   "summary",
+        Short: "Show today's time tracking summary",
+        Long:  `Displays a summary of all time entries logged today.`,
+        RunE:  runSummary,
+}
+
+func init() <span class="cov0" title="0">{
+        rootCmd.AddCommand(summaryCmd)
+}</span>
+
+func runSummary(cmd *cobra.Command, args []string) error <span class="cov0" title="0">{
+        // Load configuration
+        cfg, err := checkConfig()
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        // Initialize storage
+        <span class="cov0" title="0">store, err := storage.NewStorage(cfg.Database.Path)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to initialize storage: %w", err)
+        }</span>
+        <span class="cov0" title="0">defer store.Close()
+
+        return showTodaySummary(store)</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package cmd
+
+import (
+        "fmt"
+
+        "github.com/rs/zerolog/log"
+        "github.com/spf13/cobra"
+
+        "tasklog/internal/jira"
+        "tasklog/internal/storage"
+        "tasklog/internal/tempo"
+)
+
+var syncCmd = &amp;cobra.Command{
+        Use:   "sync",
+        Short: "Sync unsynced time entries to Jira and Tempo",
+        Long:  `Attempts to sync any time entries that failed to sync to Jira or Tempo.`,
+        RunE:  runSync,
+}
+
+func init() <span class="cov0" title="0">{
+        rootCmd.AddCommand(syncCmd)
+}</span>
+
+func runSync(cmd *cobra.Command, args []string) error <span class="cov0" title="0">{
+        // Load configuration
+        cfg, err := checkConfig()
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        // Initialize clients
+        <span class="cov0" title="0">jiraClient := jira.NewClient(cfg.Jira.URL, cfg.Jira.Username, cfg.Jira.APIToken, cfg.Jira.ProjectKey)
+        tempoClient := tempo.NewClient(cfg.Tempo.APIToken)
+
+        // Initialize storage
+        store, err := storage.NewStorage(cfg.Database.Path)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to initialize storage: %w", err)
+        }</span>
+        <span class="cov0" title="0">defer store.Close()
+
+        // Get unsynced entries
+        entries, err := store.GetUnsyncedEntries()
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to fetch unsynced entries: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">if len(entries) == 0 </span><span class="cov0" title="0">{
+                fmt.Println("✓ All entries are synced")
+                return nil
+        }</span>
+
+        <span class="cov0" title="0">fmt.Printf("Found %d unsynced entries\n\n", len(entries))
+
+        successCount := 0
+        failureCount := 0
+
+        for i, entry := range entries </span><span class="cov0" title="0">{
+                fmt.Printf("[%d/%d] Syncing %s - %s\n", i+1, len(entries), entry.IssueKey, entry.TimeSpent)
+
+                // Sync to Jira if not synced
+                if !entry.SyncedToJira </span><span class="cov0" title="0">{
+                        log.Debug().Int64("id", entry.ID).Msg("Syncing to Jira")
+                        worklog, err := jiraClient.AddWorklog(entry.IssueKey, entry.TimeSpentSeconds, entry.Started, entry.Comment)
+                        if err != nil </span><span class="cov0" title="0">{
+                                log.Error().Err(err).Int64("id", entry.ID).Msg("Failed to sync to Jira")
+                                fmt.Printf("  ✗ Failed to sync to Jira: %v\n", err)
+                                failureCount++
+                        }</span> else<span class="cov0" title="0"> {
+                                entry.SyncedToJira = true
+                                entry.JiraWorklogID = worklog.ID
+                                fmt.Println("  ✓ Synced to Jira")
+                        }</span>
+                }
+
+                // Sync to Tempo if not synced
+                <span class="cov0" title="0">if !entry.SyncedToTempo </span><span class="cov0" title="0">{
+                        log.Debug().Int64("id", entry.ID).Msg("Syncing to Tempo")
+                        tempoWorklog, err := tempoClient.AddWorklog(entry.IssueKey, entry.TimeSpentSeconds, entry.Started, entry.Label, entry.Comment)
+                        if err != nil </span><span class="cov0" title="0">{
+                                log.Error().Err(err).Int64("id", entry.ID).Msg("Failed to sync to Tempo")
+                                fmt.Printf("  ✗ Failed to sync to Tempo: %v\n", err)
+                                failureCount++
+                        }</span> else<span class="cov0" title="0"> {
+                                entry.SyncedToTempo = true
+                                entry.TempoWorklogID = fmt.Sprintf("%d", tempoWorklog.TempoWorklogID)
+                                fmt.Println("  ✓ Synced to Tempo")
+                        }</span>
+                }
+
+                // Update storage
+                <span class="cov0" title="0">if err := store.UpdateTimeEntry(&amp;entry); err != nil </span><span class="cov0" title="0">{
+                        log.Error().Err(err).Int64("id", entry.ID).Msg("Failed to update entry")
+                }</span>
+
+                <span class="cov0" title="0">if entry.SyncedToJira &amp;&amp; entry.SyncedToTempo </span><span class="cov0" title="0">{
+                        successCount++
+                }</span>
+        }
+
+        <span class="cov0" title="0">fmt.Printf("\n")
+        fmt.Printf("Sync complete: %d successful, %d failed\n", successCount, failureCount)
+
+        return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package config
+
+import (
+        "fmt"
+        "os"
+        "path/filepath"
+
+        "github.com/rs/zerolog/log"
+        "gopkg.in/yaml.v3"
+)
+
+// Config represents the application configuration
+type Config struct {
+        Jira      JiraConfig      `yaml:"jira"`
+        Tempo     TempoConfig     `yaml:"tempo"`
+        Labels    LabelsConfig    `yaml:"labels"`
+        Shortcuts []ShortcutEntry `yaml:"shortcuts"`
+        Database  DatabaseConfig  `yaml:"database"`
+}
+
+// JiraConfig contains Jira API configuration (all fields required)
+type JiraConfig struct {
+        URL        string `yaml:"url"`         // Jira instance URL (required)
+        Username   string `yaml:"username"`    // Jira username/email (required)
+        APIToken   string `yaml:"api_token"`   // Jira API token (required)
+        ProjectKey string `yaml:"project_key"` // Project key to filter tasks (required)
+}
+
+// TempoConfig contains Tempo API configuration (required)
+type TempoConfig struct {
+        APIToken string `yaml:"api_token"` // Tempo API token (required)
+}
+
+// LabelsConfig contains label filtering configuration (optional)
+type LabelsConfig struct {
+        AllowedLabels []string `yaml:"allowed_labels"` // List of allowed labels from Jira (optional)
+}
+
+// ShortcutEntry represents a predefined shortcut for quick time logging (optional)
+type ShortcutEntry struct {
+        Name  string `yaml:"name"`  // Shortcut name (e.g., "daily")
+        Task  string `yaml:"task"`  // Jira task key (e.g., "PROJ-123")
+        Time  string `yaml:"time"`  // Optional: predefined time (e.g., "30m")
+        Label string `yaml:"label"` // Work log label
+}
+
+// DatabaseConfig contains SQLite database configuration (optional)
+type DatabaseConfig struct {
+        Path string `yaml:"path"` // Path to SQLite database file (optional, defaults to ~/.tasklog/tasklog.db)
+}
+
+// Load loads configuration from the config file
+func Load() (*Config, error) <span class="cov8" title="1">{
+        configPath, err := getConfigPath()
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to get config path: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">log.Debug().Str("path", configPath).Msg("Loading configuration")
+
+        data, err := os.ReadFile(configPath)
+        if err != nil </span><span class="cov8" title="1">{
+                if os.IsNotExist(err) </span><span class="cov8" title="1">{
+                        return nil, fmt.Errorf("config file not found at %s. Please create one using the example", configPath)
+                }</span>
+                <span class="cov0" title="0">return nil, fmt.Errorf("failed to read config file: %w", err)</span>
+        }
+
+        <span class="cov8" title="1">var config Config
+        if err := yaml.Unmarshal(data, &amp;config); err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to parse config file: %w", err)
+        }</span>
+
+        // Set defaults
+        <span class="cov8" title="1">if config.Database.Path == "" </span><span class="cov8" title="1">{
+                config.Database.Path = filepath.Join(getConfigDir(), "tasklog.db")
+        }</span>
+
+        // Validate configuration
+        <span class="cov8" title="1">if err := config.Validate(); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("invalid configuration: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">log.Debug().Msg("Configuration loaded successfully")
+        return &amp;config, nil</span>
+}
+
+// Validate validates the configuration
+func (c *Config) Validate() error <span class="cov8" title="1">{
+        if c.Jira.URL == "" </span><span class="cov8" title="1">{
+                return fmt.Errorf("jira.url is required")
+        }</span>
+        <span class="cov8" title="1">if c.Jira.Username == "" </span><span class="cov8" title="1">{
+                return fmt.Errorf("jira.username is required")
+        }</span>
+        <span class="cov8" title="1">if c.Jira.APIToken == "" </span><span class="cov8" title="1">{
+                return fmt.Errorf("jira.api_token is required")
+        }</span>
+        <span class="cov8" title="1">if c.Jira.ProjectKey == "" </span><span class="cov8" title="1">{
+                return fmt.Errorf("jira.project_key is required")
+        }</span>
+        <span class="cov8" title="1">if c.Tempo.APIToken == "" </span><span class="cov8" title="1">{
+                return fmt.Errorf("tempo.api_token is required")
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+
+// GetShortcut returns a shortcut by name
+func (c *Config) GetShortcut(name string) (*ShortcutEntry, bool) <span class="cov8" title="1">{
+        for _, shortcut := range c.Shortcuts </span><span class="cov8" title="1">{
+                if shortcut.Name == name </span><span class="cov8" title="1">{
+                        return &amp;shortcut, true
+                }</span>
+        }
+        <span class="cov8" title="1">return nil, false</span>
+}
+
+// IsLabelAllowed checks if a label is in the allowed list
+// If no allowed labels are configured, all labels are allowed
+func (c *Config) IsLabelAllowed(label string) bool <span class="cov8" title="1">{
+        if len(c.Labels.AllowedLabels) == 0 </span><span class="cov8" title="1">{
+                return true
+        }</span>
+        <span class="cov8" title="1">for _, allowed := range c.Labels.AllowedLabels </span><span class="cov8" title="1">{
+                if allowed == label </span><span class="cov8" title="1">{
+                        return true
+                }</span>
+        }
+        <span class="cov8" title="1">return false</span>
+}
+
+// getConfigDir returns the configuration directory path
+func getConfigDir() string <span class="cov8" title="1">{
+        homeDir, err := os.UserHomeDir()
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal().Err(err).Msg("Failed to get user home directory")
+        }</span>
+        <span class="cov8" title="1">return filepath.Join(homeDir, ".tasklog")</span>
+}
+
+// getConfigPath returns the full path to the config file
+func getConfigPath() (string, error) <span class="cov8" title="1">{
+        configDir := getConfigDir()
+        configPath := filepath.Join(configDir, "config.yaml")
+
+        // Check if config file exists, if not check for environment variable
+        if _, err := os.Stat(configPath); os.IsNotExist(err) </span><span class="cov8" title="1">{
+                if envPath := os.Getenv("TASKLOG_CONFIG"); envPath != "" </span><span class="cov8" title="1">{
+                        return envPath, nil
+                }</span>
+        }
+
+        <span class="cov0" title="0">return configPath, nil</span>
+}
+
+// EnsureConfigDir ensures the config directory exists
+func EnsureConfigDir() error <span class="cov0" title="0">{
+        configDir := getConfigDir()
+        if err := os.MkdirAll(configDir, 0755); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to create config directory: %w", err)
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package jira
+
+import (
+        "encoding/json"
+        "fmt"
+        "io"
+        "net/http"
+        "net/url"
+        "strings"
+        "time"
+
+        "github.com/rs/zerolog/log"
+)
+
+// Client represents a Jira API client
+type Client struct {
+        baseURL    string
+        username   string
+        apiToken   string
+        projectKey string
+        httpClient *http.Client
+}
+
+// NewClient creates a new Jira API client
+func NewClient(baseURL, username, apiToken, projectKey string) *Client <span class="cov8" title="1">{
+        return &amp;Client{
+                baseURL:    strings.TrimSuffix(baseURL, "/"),
+                username:   username,
+                apiToken:   apiToken,
+                projectKey: projectKey,
+                httpClient: &amp;http.Client{
+                        Timeout: 30 * time.Second,
+                },
+        }
+}</span>
+
+// Issue represents a Jira issue
+type Issue struct {
+        Key    string      `json:"key"`
+        Fields IssueFields `json:"fields"`
+}
+
+// IssueFields represents Jira issue fields
+type IssueFields struct {
+        Summary  string      `json:"summary"`
+        Status   IssueStatus `json:"status"`
+        Assignee *IssueUser  `json:"assignee"`
+}
+
+// IssueStatus represents Jira issue status
+type IssueStatus struct {
+        Name string `json:"name"`
+}
+
+// IssueUser represents a Jira user
+type IssueUser struct {
+        DisplayName  string `json:"displayName"`
+        EmailAddress string `json:"emailAddress"`
+}
+
+// SearchResult represents Jira search results
+type SearchResult struct {
+        Issues []Issue `json:"issues"`
+        Total  int     `json:"total"`
+}
+
+// Worklog represents a Jira worklog entry
+type Worklog struct {
+        ID               string     `json:"id,omitempty"`
+        IssueID          string     `json:"issueId,omitempty"`
+        TimeSpent        string     `json:"timeSpent"`
+        TimeSpentSeconds int        `json:"timeSpentSeconds"`
+        Started          string     `json:"started"` // Format: 2024-11-11T10:00:00.000+0000
+        Comment          string     `json:"comment,omitempty"`
+        Author           *IssueUser `json:"author,omitempty"`
+}
+
+// GetInProgressIssues retrieves issues in progress for the current user
+func (c *Client) GetInProgressIssues() ([]Issue, error) <span class="cov0" title="0">{
+        log.Debug().Msg("Fetching in-progress issues")
+
+        jql := "assignee = currentUser() AND status = 'In Progress'"
+        if c.projectKey != "" </span><span class="cov0" title="0">{
+                jql = fmt.Sprintf("%s AND project = %s", jql, c.projectKey)
+        }</span>
+        <span class="cov0" title="0">jql = fmt.Sprintf("%s ORDER BY updated DESC", jql)
+
+        params := url.Values{}
+        params.Add("jql", jql)
+        params.Add("fields", "summary,status,assignee")
+        params.Add("maxResults", "50")
+
+        endpoint := fmt.Sprintf("%s/rest/api/3/search?%s", c.baseURL, params.Encode())
+
+        var result SearchResult
+        if err := c.doRequest("GET", endpoint, nil, &amp;result); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to fetch in-progress issues: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">log.Debug().Int("count", len(result.Issues)).Msg("Retrieved in-progress issues")
+        return result.Issues, nil</span>
+}
+
+// GetIssue retrieves a specific issue by key
+func (c *Client) GetIssue(issueKey string) (*Issue, error) <span class="cov0" title="0">{
+        log.Debug().Str("key", issueKey).Msg("Fetching issue")
+
+        endpoint := fmt.Sprintf("%s/rest/api/3/issue/%s?fields=summary,status,assignee", c.baseURL, issueKey)
+
+        var issue Issue
+        if err := c.doRequest("GET", endpoint, nil, &amp;issue); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to fetch issue %s: %w", issueKey, err)
+        }</span>
+
+        <span class="cov0" title="0">return &amp;issue, nil</span>
+}
+
+// SearchIssues searches for issues by key
+func (c *Client) SearchIssues(searchKey string) ([]Issue, error) <span class="cov0" title="0">{
+        log.Debug().Str("search", searchKey).Msg("Searching issues")
+
+        jql := fmt.Sprintf("key = %s OR key ~ %s", searchKey, searchKey)
+        if c.projectKey != "" </span><span class="cov0" title="0">{
+                jql = fmt.Sprintf("(%s) AND project = %s", jql, c.projectKey)
+        }</span>
+        <span class="cov0" title="0">jql = fmt.Sprintf("%s ORDER BY key DESC", jql)
+
+        params := url.Values{}
+        params.Add("jql", jql)
+        params.Add("fields", "summary,status,assignee")
+        params.Add("maxResults", "20")
+
+        endpoint := fmt.Sprintf("%s/rest/api/3/search?%s", c.baseURL, params.Encode())
+
+        var result SearchResult
+        if err := c.doRequest("GET", endpoint, nil, &amp;result); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to search issues: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">log.Debug().Int("count", len(result.Issues)).Msg("Retrieved search results")
+        return result.Issues, nil</span>
+}
+
+// AddWorklog adds a worklog entry to an issue
+func (c *Client) AddWorklog(issueKey string, timeSpentSeconds int, started time.Time, comment string) (*Worklog, error) <span class="cov0" title="0">{
+        log.Debug().
+                Str("issue", issueKey).
+                Int("seconds", timeSpentSeconds).
+                Msg("Adding worklog")
+
+        endpoint := fmt.Sprintf("%s/rest/api/3/issue/%s/worklog", c.baseURL, issueKey)
+
+        // Format started time in Jira format
+        startedStr := started.Format("2006-01-02T15:04:05.000-0700")
+
+        payload := map[string]interface{}{
+                "timeSpentSeconds": timeSpentSeconds,
+                "started":          startedStr,
+        }
+
+        if comment != "" </span><span class="cov0" title="0">{
+                payload["comment"] = map[string]interface{}{
+                        "type":    "doc",
+                        "version": 1,
+                        "content": []map[string]interface{}{
+                                {
+                                        "type": "paragraph",
+                                        "content": []map[string]interface{}{
+                                                {
+                                                        "type": "text",
+                                                        "text": comment,
+                                                },
+                                        },
+                                },
+                        },
+                }
+        }</span>
+
+        <span class="cov0" title="0">var worklog Worklog
+        if err := c.doRequest("POST", endpoint, payload, &amp;worklog); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to add worklog: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">log.Info().
+                Str("issue", issueKey).
+                Str("time", formatSeconds(timeSpentSeconds)).
+                Msg("Worklog added successfully")
+
+        return &amp;worklog, nil</span>
+}
+
+// GetTodayWorklogs retrieves today's worklogs for the current user
+func (c *Client) GetTodayWorklogs() ([]Worklog, error) <span class="cov0" title="0">{
+        log.Debug().Msg("Fetching today's worklogs")
+
+        // Get issues with worklogs updated today
+        jql := "worklogAuthor = currentUser() AND worklogDate = startOfDay()"
+        if c.projectKey != "" </span><span class="cov0" title="0">{
+                jql = fmt.Sprintf("%s AND project = %s", jql, c.projectKey)
+        }</span>
+        <span class="cov0" title="0">jql = fmt.Sprintf("%s ORDER BY updated DESC", jql)
+
+        params := url.Values{}
+        params.Add("jql", jql)
+        params.Add("fields", "worklog")
+        params.Add("maxResults", "100")
+
+        endpoint := fmt.Sprintf("%s/rest/api/3/search?%s", c.baseURL, params.Encode())
+
+        var result SearchResult
+        if err := c.doRequest("GET", endpoint, nil, &amp;result); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to fetch today's issues: %w", err)
+        }</span>
+
+        // Extract worklogs from issues (simplified - in production you'd need to fetch worklogs separately)
+        <span class="cov0" title="0">worklogs := []Worklog{}
+
+        log.Debug().Int("count", len(worklogs)).Msg("Retrieved today's worklogs")
+        return worklogs, nil</span>
+}
+
+// doRequest performs an HTTP request to the Jira API
+func (c *Client) doRequest(method, url string, body interface{}, result interface{}) error <span class="cov0" title="0">{
+        var reqBody io.Reader
+        if body != nil </span><span class="cov0" title="0">{
+                jsonData, err := json.Marshal(body)
+                if err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("failed to marshal request body: %w", err)
+                }</span>
+                <span class="cov0" title="0">reqBody = strings.NewReader(string(jsonData))</span>
+        }
+
+        <span class="cov0" title="0">req, err := http.NewRequest(method, url, reqBody)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to create request: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">req.SetBasicAuth(c.username, c.apiToken)
+        req.Header.Set("Content-Type", "application/json")
+        req.Header.Set("Accept", "application/json")
+
+        resp, err := c.httpClient.Do(req)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("request failed: %w", err)
+        }</span>
+        <span class="cov0" title="0">defer resp.Body.Close()
+
+        respBody, err := io.ReadAll(resp.Body)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to read response: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">if resp.StatusCode &lt; 200 || resp.StatusCode &gt;= 300 </span><span class="cov0" title="0">{
+                log.Error().
+                        Int("status", resp.StatusCode).
+                        Str("body", string(respBody)).
+                        Msg("API request failed")
+                return fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(respBody))
+        }</span>
+
+        <span class="cov0" title="0">if result != nil </span><span class="cov0" title="0">{
+                if err := json.Unmarshal(respBody, result); err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("failed to parse response: %w", err)
+                }</span>
+        }
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// formatSeconds formats seconds into human-readable time
+func formatSeconds(seconds int) string <span class="cov8" title="1">{
+        hours := seconds / 3600
+        minutes := (seconds % 3600) / 60
+
+        if hours &gt; 0 &amp;&amp; minutes &gt; 0 </span><span class="cov8" title="1">{
+                return fmt.Sprintf("%dh %dm", hours, minutes)
+        }</span> else<span class="cov8" title="1"> if hours &gt; 0 </span><span class="cov8" title="1">{
+                return fmt.Sprintf("%dh", hours)
+        }</span>
+        <span class="cov8" title="1">return fmt.Sprintf("%dm", minutes)</span>
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package storage
+
+import (
+        "database/sql"
+        "fmt"
+        "time"
+
+        _ "github.com/mattn/go-sqlite3"
+        "github.com/rs/zerolog/log"
+)
+
+// Storage represents the SQLite storage layer
+type Storage struct {
+        db *sql.DB
+}
+
+// TimeEntry represents a time entry in the local cache
+type TimeEntry struct {
+        ID               int64     `json:"id"`
+        IssueKey         string    `json:"issue_key"`
+        IssueSummary     string    `json:"issue_summary"`
+        TimeSpentSeconds int       `json:"time_spent_seconds"`
+        TimeSpent        string    `json:"time_spent"`
+        Label            string    `json:"label"`
+        Comment          string    `json:"comment"`
+        Started          time.Time `json:"started"`
+        CreatedAt        time.Time `json:"created_at"`
+        SyncedToJira     bool      `json:"synced_to_jira"`
+        SyncedToTempo    bool      `json:"synced_to_tempo"`
+        JiraWorklogID    string    `json:"jira_worklog_id"`
+        TempoWorklogID   string    `json:"tempo_worklog_id"`
+}
+
+// NewStorage creates a new storage instance
+func NewStorage(dbPath string) (*Storage, error) <span class="cov8" title="1">{
+        log.Debug().Str("path", dbPath).Msg("Opening database")
+
+        db, err := sql.Open("sqlite3", dbPath)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to open database: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">storage := &amp;Storage{db: db}
+
+        if err := storage.initSchema(); err != nil </span><span class="cov0" title="0">{
+                db.Close()
+                return nil, fmt.Errorf("failed to initialize schema: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">log.Debug().Msg("Database initialized successfully")
+        return storage, nil</span>
+}
+
+// Close closes the database connection
+func (s *Storage) Close() error <span class="cov8" title="1">{
+        return s.db.Close()
+}</span>
+
+// initSchema creates the database schema
+func (s *Storage) initSchema() error <span class="cov8" title="1">{
+        schema := `
+        CREATE TABLE IF NOT EXISTS time_entries (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                issue_key TEXT NOT NULL,
+                issue_summary TEXT NOT NULL,
+                time_spent_seconds INTEGER NOT NULL,
+                time_spent TEXT NOT NULL,
+                label TEXT NOT NULL,
+                comment TEXT,
+                started DATETIME NOT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                synced_to_jira BOOLEAN NOT NULL DEFAULT 0,
+                synced_to_tempo BOOLEAN NOT NULL DEFAULT 0,
+                jira_worklog_id TEXT,
+                tempo_worklog_id TEXT
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_time_entries_issue_key ON time_entries(issue_key);
+        CREATE INDEX IF NOT EXISTS idx_time_entries_started ON time_entries(started);
+        CREATE INDEX IF NOT EXISTS idx_time_entries_created_at ON time_entries(created_at);
+        CREATE INDEX IF NOT EXISTS idx_time_entries_synced ON time_entries(synced_to_jira, synced_to_tempo);
+        `
+
+        if _, err := s.db.Exec(schema); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to create schema: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// AddTimeEntry adds a new time entry to the database
+func (s *Storage) AddTimeEntry(entry *TimeEntry) error <span class="cov8" title="1">{
+        log.Debug().
+                Str("issue", entry.IssueKey).
+                Int("seconds", entry.TimeSpentSeconds).
+                Str("label", entry.Label).
+                Msg("Adding time entry")
+
+        query := `
+                INSERT INTO time_entries (
+                        issue_key, issue_summary, time_spent_seconds, time_spent,
+                        label, comment, started, synced_to_jira, synced_to_tempo,
+                        jira_worklog_id, tempo_worklog_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `
+
+        result, err := s.db.Exec(
+                query,
+                entry.IssueKey,
+                entry.IssueSummary,
+                entry.TimeSpentSeconds,
+                entry.TimeSpent,
+                entry.Label,
+                entry.Comment,
+                entry.Started,
+                entry.SyncedToJira,
+                entry.SyncedToTempo,
+                entry.JiraWorklogID,
+                entry.TempoWorklogID,
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to insert time entry: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">id, err := result.LastInsertId()
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to get inserted ID: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">entry.ID = id
+        log.Info().Int64("id", id).Msg("Time entry added to local cache")
+        return nil</span>
+}
+
+// UpdateTimeEntry updates an existing time entry
+func (s *Storage) UpdateTimeEntry(entry *TimeEntry) error <span class="cov8" title="1">{
+        log.Debug().Int64("id", entry.ID).Msg("Updating time entry")
+
+        query := `
+                UPDATE time_entries SET
+                        synced_to_jira = ?,
+                        synced_to_tempo = ?,
+                        jira_worklog_id = ?,
+                        tempo_worklog_id = ?
+                WHERE id = ?
+        `
+
+        _, err := s.db.Exec(
+                query,
+                entry.SyncedToJira,
+                entry.SyncedToTempo,
+                entry.JiraWorklogID,
+                entry.TempoWorklogID,
+                entry.ID,
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to update time entry: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">log.Debug().Int64("id", entry.ID).Msg("Time entry updated")
+        return nil</span>
+}
+
+// GetTodayEntries retrieves all time entries for today
+func (s *Storage) GetTodayEntries() ([]TimeEntry, error) <span class="cov8" title="1">{
+        log.Debug().Msg("Fetching today's entries")
+
+        today := time.Now().Format("2006-01-02")
+        query := `
+                SELECT 
+                        id, issue_key, issue_summary, time_spent_seconds, time_spent,
+                        label, comment, started, created_at, synced_to_jira, synced_to_tempo,
+                        jira_worklog_id, tempo_worklog_id
+                FROM time_entries
+                WHERE DATE(started) = ?
+                ORDER BY started DESC
+        `
+
+        rows, err := s.db.Query(query, today)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to query time entries: %w", err)
+        }</span>
+        <span class="cov8" title="1">defer rows.Close()
+
+        var entries []TimeEntry
+        for rows.Next() </span><span class="cov8" title="1">{
+                var entry TimeEntry
+                err := rows.Scan(
+                        &amp;entry.ID,
+                        &amp;entry.IssueKey,
+                        &amp;entry.IssueSummary,
+                        &amp;entry.TimeSpentSeconds,
+                        &amp;entry.TimeSpent,
+                        &amp;entry.Label,
+                        &amp;entry.Comment,
+                        &amp;entry.Started,
+                        &amp;entry.CreatedAt,
+                        &amp;entry.SyncedToJira,
+                        &amp;entry.SyncedToTempo,
+                        &amp;entry.JiraWorklogID,
+                        &amp;entry.TempoWorklogID,
+                )
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("failed to scan time entry: %w", err)
+                }</span>
+                <span class="cov8" title="1">entries = append(entries, entry)</span>
+        }
+
+        <span class="cov8" title="1">if err := rows.Err(); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("error iterating time entries: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">log.Debug().Int("count", len(entries)).Msg("Retrieved today's entries")
+        return entries, nil</span>
+}
+
+// GetUnsyncedEntries retrieves entries that haven't been synced to Jira or Tempo
+func (s *Storage) GetUnsyncedEntries() ([]TimeEntry, error) <span class="cov8" title="1">{
+        log.Debug().Msg("Fetching unsynced entries")
+
+        query := `
+                SELECT 
+                        id, issue_key, issue_summary, time_spent_seconds, time_spent,
+                        label, comment, started, created_at, synced_to_jira, synced_to_tempo,
+                        jira_worklog_id, tempo_worklog_id
+                FROM time_entries
+                WHERE synced_to_jira = 0 OR synced_to_tempo = 0
+                ORDER BY started ASC
+        `
+
+        rows, err := s.db.Query(query)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to query unsynced entries: %w", err)
+        }</span>
+        <span class="cov8" title="1">defer rows.Close()
+
+        var entries []TimeEntry
+        for rows.Next() </span><span class="cov8" title="1">{
+                var entry TimeEntry
+                err := rows.Scan(
+                        &amp;entry.ID,
+                        &amp;entry.IssueKey,
+                        &amp;entry.IssueSummary,
+                        &amp;entry.TimeSpentSeconds,
+                        &amp;entry.TimeSpent,
+                        &amp;entry.Label,
+                        &amp;entry.Comment,
+                        &amp;entry.Started,
+                        &amp;entry.CreatedAt,
+                        &amp;entry.SyncedToJira,
+                        &amp;entry.SyncedToTempo,
+                        &amp;entry.JiraWorklogID,
+                        &amp;entry.TempoWorklogID,
+                )
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("failed to scan time entry: %w", err)
+                }</span>
+                <span class="cov8" title="1">entries = append(entries, entry)</span>
+        }
+
+        <span class="cov8" title="1">if err := rows.Err(); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("error iterating unsynced entries: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">log.Debug().Int("count", len(entries)).Msg("Retrieved unsynced entries")
+        return entries, nil</span>
+}
+
+// GetTodayTotalSeconds calculates total seconds logged today
+func (s *Storage) GetTodayTotalSeconds() (int, error) <span class="cov8" title="1">{
+        today := time.Now().Format("2006-01-02")
+
+        var total sql.NullInt64
+        query := `
+                SELECT SUM(time_spent_seconds)
+                FROM time_entries
+                WHERE DATE(started) = ?
+        `
+
+        err := s.db.QueryRow(query, today).Scan(&amp;total)
+        if err != nil </span><span class="cov0" title="0">{
+                return 0, fmt.Errorf("failed to calculate total: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">if !total.Valid </span><span class="cov8" title="1">{
+                return 0, nil
+        }</span>
+
+        <span class="cov8" title="1">return int(total.Int64), nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package tempo
+
+import (
+        "encoding/json"
+        "fmt"
+        "io"
+        "net/http"
+        "strings"
+        "time"
+
+        "github.com/rs/zerolog/log"
+)
+
+// Client represents a Tempo API client
+type Client struct {
+        apiToken   string
+        httpClient *http.Client
+}
+
+// NewClient creates a new Tempo API client
+func NewClient(apiToken string) *Client <span class="cov8" title="1">{
+        return &amp;Client{
+                apiToken: apiToken,
+                httpClient: &amp;http.Client{
+                        Timeout: 30 * time.Second,
+                },
+        }
+}</span>
+
+// WorklogRequest represents a request to create a worklog in Tempo
+type WorklogRequest struct {
+        IssueKey         string             `json:"issueKey"`
+        TimeSpentSeconds int                `json:"timeSpentSeconds"`
+        StartDate        string             `json:"startDate"` // Format: YYYY-MM-DD
+        StartTime        string             `json:"startTime"` // Format: HH:MM:SS
+        Description      string             `json:"description,omitempty"`
+        AuthorAccountID  string             `json:"authorAccountId,omitempty"`
+        Attributes       []WorklogAttribute `json:"attributes,omitempty"`
+}
+
+// WorklogAttribute represents a Tempo worklog attribute (for labels)
+type WorklogAttribute struct {
+        Key   string `json:"key"`
+        Value string `json:"value"`
+}
+
+// WorklogResponse represents the response from Tempo after creating a worklog
+type WorklogResponse struct {
+        TempoWorklogID   int    `json:"tempoWorklogId"`
+        JiraWorklogID    int    `json:"jiraWorklogId"`
+        IssueKey         string `json:"issueKey"`
+        TimeSpentSeconds int    `json:"timeSpentSeconds"`
+        StartDate        string `json:"startDate"`
+        StartTime        string `json:"startTime"`
+        Description      string `json:"description"`
+        CreatedAt        string `json:"createdAt"`
+}
+
+// AddWorklog adds a worklog entry to Tempo
+func (c *Client) AddWorklog(issueKey string, timeSpentSeconds int, started time.Time, label, description string) (*WorklogResponse, error) <span class="cov0" title="0">{
+        log.Debug().
+                Str("issue", issueKey).
+                Int("seconds", timeSpentSeconds).
+                Str("label", label).
+                Msg("Adding worklog to Tempo")
+
+        endpoint := "https://api.tempo.io/core/3/worklogs"
+
+        // Format date and time for Tempo
+        startDate := started.Format("2006-01-02")
+        startTime := started.Format("15:04:05")
+
+        payload := WorklogRequest{
+                IssueKey:         issueKey,
+                TimeSpentSeconds: timeSpentSeconds,
+                StartDate:        startDate,
+                StartTime:        startTime,
+                Description:      description,
+        }
+
+        // Add label as an attribute if provided
+        // Note: The attribute key depends on your Tempo configuration
+        // You may need to adjust this based on your Tempo setup
+        if label != "" </span><span class="cov0" title="0">{
+                // Construct description with label
+                if payload.Description != "" </span><span class="cov0" title="0">{
+                        payload.Description = fmt.Sprintf("[%s] %s", label, payload.Description)
+                }</span> else<span class="cov0" title="0"> {
+                        payload.Description = fmt.Sprintf("[%s]", label)
+                }</span>
+        }
+
+        <span class="cov0" title="0">var response WorklogResponse
+        if err := c.doRequest("POST", endpoint, payload, &amp;response); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to add worklog to Tempo: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">log.Info().
+                Str("issue", issueKey).
+                Int("tempo_id", response.TempoWorklogID).
+                Str("time", formatSeconds(timeSpentSeconds)).
+                Msg("Worklog added to Tempo successfully")
+
+        return &amp;response, nil</span>
+}
+
+// GetWorklogs retrieves worklogs for a date range
+func (c *Client) GetWorklogs(from, to time.Time) ([]WorklogResponse, error) <span class="cov0" title="0">{
+        log.Debug().
+                Str("from", from.Format("2006-01-02")).
+                Str("to", to.Format("2006-01-02")).
+                Msg("Fetching worklogs from Tempo")
+
+        endpoint := fmt.Sprintf(
+                "https://api.tempo.io/core/3/worklogs?from=%s&amp;to=%s",
+                from.Format("2006-01-02"),
+                to.Format("2006-01-02"),
+        )
+
+        var response struct {
+                Results []WorklogResponse `json:"results"`
+        }
+
+        if err := c.doRequest("GET", endpoint, nil, &amp;response); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to fetch worklogs from Tempo: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">log.Debug().Int("count", len(response.Results)).Msg("Retrieved worklogs from Tempo")
+        return response.Results, nil</span>
+}
+
+// GetTodayWorklogs retrieves today's worklogs
+func (c *Client) GetTodayWorklogs() ([]WorklogResponse, error) <span class="cov0" title="0">{
+        today := time.Now()
+        return c.GetWorklogs(today, today)
+}</span>
+
+// doRequest performs an HTTP request to the Tempo API
+func (c *Client) doRequest(method, url string, body interface{}, result interface{}) error <span class="cov0" title="0">{
+        var reqBody io.Reader
+        if body != nil </span><span class="cov0" title="0">{
+                jsonData, err := json.Marshal(body)
+                if err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("failed to marshal request body: %w", err)
+                }</span>
+                <span class="cov0" title="0">reqBody = strings.NewReader(string(jsonData))
+                log.Debug().Str("body", string(jsonData)).Msg("Request body")</span>
+        }
+
+        <span class="cov0" title="0">req, err := http.NewRequest(method, url, reqBody)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to create request: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.apiToken))
+        req.Header.Set("Content-Type", "application/json")
+        req.Header.Set("Accept", "application/json")
+
+        resp, err := c.httpClient.Do(req)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("request failed: %w", err)
+        }</span>
+        <span class="cov0" title="0">defer resp.Body.Close()
+
+        respBody, err := io.ReadAll(resp.Body)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to read response: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">if resp.StatusCode &lt; 200 || resp.StatusCode &gt;= 300 </span><span class="cov0" title="0">{
+                log.Error().
+                        Int("status", resp.StatusCode).
+                        Str("body", string(respBody)).
+                        Msg("Tempo API request failed")
+                return fmt.Errorf("Tempo API request failed with status %d: %s", resp.StatusCode, string(respBody))
+        }</span>
+
+        <span class="cov0" title="0">if result != nil </span><span class="cov0" title="0">{
+                if err := json.Unmarshal(respBody, result); err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("failed to parse response: %w", err)
+                }</span>
+        }
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// formatSeconds formats seconds into human-readable time
+func formatSeconds(seconds int) string <span class="cov8" title="1">{
+        hours := seconds / 3600
+        minutes := (seconds % 3600) / 60
+
+        if hours &gt; 0 &amp;&amp; minutes &gt; 0 </span><span class="cov8" title="1">{
+                return fmt.Sprintf("%dh %dm", hours, minutes)
+        }</span> else<span class="cov8" title="1"> if hours &gt; 0 </span><span class="cov8" title="1">{
+                return fmt.Sprintf("%dh", hours)
+        }</span>
+        <span class="cov8" title="1">return fmt.Sprintf("%dm", minutes)</span>
+}
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package timeparse
+
+import (
+        "fmt"
+        "math"
+        "regexp"
+        "strconv"
+        "strings"
+)
+
+var (
+        // Regex patterns for parsing time formats
+        // Supports: 2h 30m, 2.5h, 150m, 2h30m, etc.
+        hoursMinutesPattern = regexp.MustCompile(`(?i)^(\d+)\s*h(?:ours?)?\s*(\d+)\s*m(?:in(?:utes?)?)?$`)
+        hoursOnlyPattern    = regexp.MustCompile(`(?i)^(\d+(?:\.\d+)?)\s*h(?:ours?)?$`)
+        minutesOnlyPattern  = regexp.MustCompile(`(?i)^(\d+)\s*m(?:in(?:utes?)?)?$`)
+)
+
+// Parse parses a time string and returns the duration in seconds
+// Supports formats: "2h 30m", "2.5h", "150m", "2h30m"
+// Rounds to the nearest 5 minutes
+func Parse(input string) (int, error) <span class="cov8" title="1">{
+        input = strings.TrimSpace(input)
+        if input == "" </span><span class="cov8" title="1">{
+                return 0, fmt.Errorf("empty time input")
+        }</span>
+
+        <span class="cov8" title="1">var totalMinutes float64
+
+        // Try matching "Xh Ym" or "XhYm" format
+        if matches := hoursMinutesPattern.FindStringSubmatch(input); matches != nil </span><span class="cov8" title="1">{
+                hours, err := strconv.Atoi(matches[1])
+                if err != nil </span><span class="cov0" title="0">{
+                        return 0, fmt.Errorf("invalid hours value: %w", err)
+                }</span>
+                <span class="cov8" title="1">minutes, err := strconv.Atoi(matches[2])
+                if err != nil </span><span class="cov0" title="0">{
+                        return 0, fmt.Errorf("invalid minutes value: %w", err)
+                }</span>
+                <span class="cov8" title="1">totalMinutes = float64(hours*60 + minutes)</span>
+        } else<span class="cov8" title="1"> if matches := hoursOnlyPattern.FindStringSubmatch(input); matches != nil </span><span class="cov8" title="1">{
+                // Try matching "X.Yh" or "Xh" format
+                hours, err := strconv.ParseFloat(matches[1], 64)
+                if err != nil </span><span class="cov0" title="0">{
+                        return 0, fmt.Errorf("invalid hours value: %w", err)
+                }</span>
+                <span class="cov8" title="1">totalMinutes = hours * 60</span>
+        } else<span class="cov8" title="1"> if matches := minutesOnlyPattern.FindStringSubmatch(input); matches != nil </span><span class="cov8" title="1">{
+                // Try matching "Xm" format
+                minutes, err := strconv.Atoi(matches[1])
+                if err != nil </span><span class="cov0" title="0">{
+                        return 0, fmt.Errorf("invalid minutes value: %w", err)
+                }</span>
+                <span class="cov8" title="1">totalMinutes = float64(minutes)</span>
+        } else<span class="cov8" title="1"> {
+                return 0, fmt.Errorf("invalid time format: %s (expected formats: 2h 30m, 2.5h, 150m)", input)
+        }</span>
+
+        <span class="cov8" title="1">if totalMinutes &lt;= 0 </span><span class="cov8" title="1">{
+                return 0, fmt.Errorf("time must be positive")
+        }</span>
+
+        // Round to nearest 5 minutes
+        <span class="cov8" title="1">roundedMinutes := roundToNearest5(totalMinutes)
+
+        return int(roundedMinutes * 60), nil</span>
+}
+
+// roundToNearest5 rounds a number to the nearest 5
+func roundToNearest5(minutes float64) float64 <span class="cov8" title="1">{
+        return math.Round(minutes/5) * 5
+}</span>
+
+// Format formats seconds into a human-readable time string
+func Format(seconds int) string <span class="cov8" title="1">{
+        hours := seconds / 3600
+        minutes := (seconds % 3600) / 60
+
+        if hours &gt; 0 &amp;&amp; minutes &gt; 0 </span><span class="cov8" title="1">{
+                return fmt.Sprintf("%dh %dm", hours, minutes)
+        }</span> else<span class="cov8" title="1"> if hours &gt; 0 </span><span class="cov8" title="1">{
+                return fmt.Sprintf("%dh", hours)
+        }</span>
+        <span class="cov8" title="1">return fmt.Sprintf("%dm", minutes)</span>
+}
+
+// Validate checks if a time string is valid
+func Validate(input string) error <span class="cov8" title="1">{
+        _, err := Parse(input)
+        return err
+}</span>
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">package ui
+
+import (
+        "fmt"
+
+        "tasklog/internal/jira"
+
+        "github.com/AlecAivazis/survey/v2"
+)
+
+// SelectTask presents the user with task selection options
+func SelectTask(inProgressIssues []jira.Issue) (*jira.Issue, error) <span class="cov0" title="0">{
+        if len(inProgressIssues) == 0 </span><span class="cov0" title="0">{
+                // No in-progress tasks, prompt for search or manual entry
+                return selectTaskWithoutInProgress()
+        }</span>
+
+        // Build options from in-progress tasks
+        <span class="cov0" title="0">options := make([]string, 0, len(inProgressIssues)+2)
+        for _, issue := range inProgressIssues </span><span class="cov0" title="0">{
+                options = append(options, fmt.Sprintf("%s - %s", issue.Key, issue.Fields.Summary))
+        }</span>
+        <span class="cov0" title="0">options = append(options, "Search for a task", "Enter task key manually")
+
+        var selected string
+        prompt := &amp;survey.Select{
+                Message:  "Select a task:",
+                Options:  options,
+                PageSize: 10,
+        }
+
+        if err := survey.AskOne(prompt, &amp;selected); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        // Check if user selected search or manual entry
+        <span class="cov0" title="0">if selected == "Search for a task" </span><span class="cov0" title="0">{
+                return promptTaskSearch()
+        }</span>
+        <span class="cov0" title="0">if selected == "Enter task key manually" </span><span class="cov0" title="0">{
+                return promptManualTaskKey()
+        }</span>
+
+        // Find the selected issue
+        <span class="cov0" title="0">for _, issue := range inProgressIssues </span><span class="cov0" title="0">{
+                if fmt.Sprintf("%s - %s", issue.Key, issue.Fields.Summary) == selected </span><span class="cov0" title="0">{
+                        return &amp;issue, nil
+                }</span>
+        }
+
+        <span class="cov0" title="0">return nil, fmt.Errorf("task not found")</span>
+}
+
+// selectTaskWithoutInProgress handles task selection when no in-progress tasks exist
+func selectTaskWithoutInProgress() (*jira.Issue, error) <span class="cov0" title="0">{
+        options := []string{"Search for a task", "Enter task key manually"}
+
+        var selected string
+        prompt := &amp;survey.Select{
+                Message: "No in-progress tasks found. How would you like to find a task?",
+                Options: options,
+        }
+
+        if err := survey.AskOne(prompt, &amp;selected); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">if selected == "Search for a task" </span><span class="cov0" title="0">{
+                return promptTaskSearch()
+        }</span>
+        <span class="cov0" title="0">return promptManualTaskKey()</span>
+}
+
+// promptTaskSearch prompts the user to search for a task
+func promptTaskSearch() (*jira.Issue, error) <span class="cov0" title="0">{
+        var searchKey string
+        prompt := &amp;survey.Input{
+                Message: "Enter task key to search:",
+        }
+
+        if err := survey.AskOne(prompt, &amp;searchKey, survey.WithValidator(survey.Required)); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        // Return a placeholder - actual search will be done by the caller
+        <span class="cov0" title="0">return &amp;jira.Issue{Key: searchKey}, nil</span>
+}
+
+// promptManualTaskKey prompts the user to enter a task key manually
+func promptManualTaskKey() (*jira.Issue, error) <span class="cov0" title="0">{
+        var taskKey string
+        prompt := &amp;survey.Input{
+                Message: "Enter task key:",
+        }
+
+        if err := survey.AskOne(prompt, &amp;taskKey, survey.WithValidator(survey.Required)); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return &amp;jira.Issue{Key: taskKey}, nil</span>
+}
+
+// SelectFromSearchResults presents search results to the user
+func SelectFromSearchResults(issues []jira.Issue) (*jira.Issue, error) <span class="cov0" title="0">{
+        if len(issues) == 0 </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("no tasks found")
+        }</span>
+
+        <span class="cov0" title="0">options := make([]string, len(issues))
+        for i, issue := range issues </span><span class="cov0" title="0">{
+                options[i] = fmt.Sprintf("%s - %s", issue.Key, issue.Fields.Summary)
+        }</span>
+
+        <span class="cov0" title="0">var selected string
+        prompt := &amp;survey.Select{
+                Message:  "Select a task from search results:",
+                Options:  options,
+                PageSize: 10,
+        }
+
+        if err := survey.AskOne(prompt, &amp;selected); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        // Find the selected issue
+        <span class="cov0" title="0">for _, issue := range issues </span><span class="cov0" title="0">{
+                if fmt.Sprintf("%s - %s", issue.Key, issue.Fields.Summary) == selected </span><span class="cov0" title="0">{
+                        return &amp;issue, nil
+                }</span>
+        }
+
+        <span class="cov0" title="0">return nil, fmt.Errorf("task not found")</span>
+}
+
+// PromptTimeSpent prompts the user for time spent
+func PromptTimeSpent() (string, error) <span class="cov0" title="0">{
+        var timeSpent string
+        prompt := &amp;survey.Input{
+                Message: "Enter time spent (e.g., 2h 30m, 2.5h, 150m):",
+                Help:    "Formats: 2h 30m, 2.5h, 150m (will be rounded to nearest 5 minutes)",
+        }
+
+        if err := survey.AskOne(prompt, &amp;timeSpent, survey.WithValidator(survey.Required)); err != nil </span><span class="cov0" title="0">{
+                return "", err
+        }</span>
+
+        <span class="cov0" title="0">return timeSpent, nil</span>
+}
+
+// SelectLabel prompts the user to select a label
+func SelectLabel(allowedLabels []string) (string, error) <span class="cov0" title="0">{
+        if len(allowedLabels) == 0 </span><span class="cov0" title="0">{
+                // If no labels configured, allow free text
+                return promptFreeTextLabel()
+        }</span>
+
+        <span class="cov0" title="0">var selected string
+        prompt := &amp;survey.Select{
+                Message:  "Select a label:",
+                Options:  allowedLabels,
+                PageSize: 10,
+        }
+
+        if err := survey.AskOne(prompt, &amp;selected); err != nil </span><span class="cov0" title="0">{
+                return "", err
+        }</span>
+
+        <span class="cov0" title="0">return selected, nil</span>
+}
+
+// promptFreeTextLabel prompts for a free-text label
+func promptFreeTextLabel() (string, error) <span class="cov0" title="0">{
+        var label string
+        prompt := &amp;survey.Input{
+                Message: "Enter a label:",
+        }
+
+        if err := survey.AskOne(prompt, &amp;label, survey.WithValidator(survey.Required)); err != nil </span><span class="cov0" title="0">{
+                return "", err
+        }</span>
+
+        <span class="cov0" title="0">return label, nil</span>
+}
+
+// PromptComment prompts the user for an optional comment
+func PromptComment() (string, error) <span class="cov0" title="0">{
+        var comment string
+        prompt := &amp;survey.Input{
+                Message: "Enter a comment (optional):",
+        }
+
+        if err := survey.AskOne(prompt, &amp;comment); err != nil </span><span class="cov0" title="0">{
+                return "", err
+        }</span>
+
+        <span class="cov0" title="0">return comment, nil</span>
+}
+
+// Confirm asks the user for confirmation
+func Confirm(message string) (bool, error) <span class="cov0" title="0">{
+        var confirmed bool
+        prompt := &amp;survey.Confirm{
+                Message: message,
+                Default: true,
+        }
+
+        if err := survey.AskOne(prompt, &amp;confirmed); err != nil </span><span class="cov0" title="0">{
+                return false, err
+        }</span>
+
+        <span class="cov0" title="0">return confirmed, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file11" style="display: none">package main
+
+import (
+        "os"
+
+        "tasklog/cmd"
+
+        "github.com/rs/zerolog"
+        "github.com/rs/zerolog/log"
+)
+
+func main() <span class="cov0" title="0">{
+        // Configure zerolog
+        log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+        zerolog.SetGlobalLevel(zerolog.InfoLevel)
+
+        // Execute root command
+        if err := cmd.Execute(); err != nil </span><span class="cov0" title="0">{
+                log.Fatal().Err(err).Msg("Failed to execute command")
+        }</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

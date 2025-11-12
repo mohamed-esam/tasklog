@@ -1,0 +1,35 @@
+# Binaries
+tasklog
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Dependency directories
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+
+# Config files (contains sensitive data)
+config.yaml
+.tasklog/
+
+# SQLite database
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
