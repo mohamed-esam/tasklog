@@ -192,7 +192,7 @@ func (c *Client) doRequest(method, url string, body interface{}, result interfac
 			Int("status", resp.StatusCode).
 			Str("body", string(respBody)).
 			Msg("Tempo API request failed")
-		return fmt.Errorf("Tempo API request failed with status %d: %s", resp.StatusCode, string(respBody))
+		return fmt.Errorf("tempo API request failed with status %d: %s", resp.StatusCode, string(respBody))
 	}
 
 	if result != nil {

@@ -97,9 +97,12 @@ func TestValidate(t *testing.T) {
 					APIToken:   "token123",
 					ProjectKey: "PROJ",
 				},
+				Tempo: TempoConfig{
+					Enabled: true,
+				},
 			},
 			wantError: true,
-			errorMsg:  "tempo.api_token is required",
+			errorMsg:  "tempo.api_token is required when tempo.enabled is true",
 		},
 	}
 

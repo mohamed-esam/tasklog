@@ -72,9 +72,11 @@ func TestUpdateTimeEntry(t *testing.T) {
 
 	// Update sync status
 	entry.SyncedToJira = true
-	entry.JiraWorklogID = "12345"
+	jiraID := "12345"
+	entry.JiraWorklogID = &jiraID
 	entry.SyncedToTempo = true
-	entry.TempoWorklogID = "67890"
+	tempoID := "67890"
+	entry.TempoWorklogID = &tempoID
 
 	err = store.UpdateTimeEntry(entry)
 	if err != nil {

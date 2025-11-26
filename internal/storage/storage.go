@@ -43,7 +43,7 @@ func NewStorage(dbPath string) (*Storage, error) {
 	storage := &Storage{db: db}
 
 	if err := storage.initSchema(); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("failed to initialize schema: %w", err)
 	}
 

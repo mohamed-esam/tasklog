@@ -108,7 +108,7 @@ func TestWorklogStructure(t *testing.T) {
 		TimeSpent:        "2h",
 		TimeSpentSeconds: 7200,
 		Started:          "2024-11-11T10:00:00.000+0000",
-		Comment:          "Test comment",
+		Comment:          []byte(`"Test comment"`),
 	}
 
 	if worklog.ID != "12345" {

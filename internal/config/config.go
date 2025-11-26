@@ -167,15 +167,14 @@ func getConfigDir() string {
 
 // getConfigPath returns the full path to the config file
 func getConfigPath() (string, error) {
+	// Check environment variable first
+	if envPath := os.Getenv("TASKLOG_CONFIG"); envPath != "" {
+		return envPath, nil
+	}
+
+	// Otherwise use default path
 	configDir := getConfigDir()
 	configPath := filepath.Join(configDir, "config.yaml")
-
-	// Check if config file exists, if not check for environment variable
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		if envPath := os.Getenv("TASKLOG_CONFIG"); envPath != "" {
-			return envPath, nil
-		}
-	}
 
 	return configPath, nil
 }
@@ -183,7 +182,7 @@ func getConfigPath() (string, error) {
 // EnsureConfigDir ensures the config directory exists
 func EnsureConfigDir() error {
 	configDir := getConfigDir()
-	if err := os.MkdirAll(configDir, 0755); err != nil {
+	if err := os.MkdirAll(configDir, 0750); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
 	}
 	return nil

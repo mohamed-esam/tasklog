@@ -51,15 +51,16 @@ func TestFormatSeconds(t *testing.T) {
 
 func TestWorklogRequestStructure(t *testing.T) {
 	req := WorklogRequest{
-		IssueKey:         "PROJ-123",
+		IssueID:          "12345",
+		AuthorAccountID:  "account-123",
 		TimeSpentSeconds: 7200,
 		StartDate:        "2024-11-11",
 		StartTime:        "10:00:00",
 		Description:      "Test work",
 	}
 
-	if req.IssueKey != "PROJ-123" {
-		t.Error("issue key not set correctly")
+	if req.IssueID != "12345" {
+		t.Error("issue ID not set correctly")
 	}
 
 	if req.TimeSpentSeconds != 7200 {
