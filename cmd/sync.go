@@ -8,7 +8,6 @@ import (
 
 	"tasklog/internal/jira"
 	"tasklog/internal/storage"
-	"tasklog/internal/tempo"
 )
 
 var syncCmd = &cobra.Command{
@@ -31,7 +30,6 @@ func runSync(cmd *cobra.Command, args []string) error {
 
 	// Initialize clients
 	jiraClient := jira.NewClient(cfg.Jira.URL, cfg.Jira.Username, cfg.Jira.APIToken, cfg.Jira.ProjectKey)
-	tempoClient := tempo.NewClient(cfg.Tempo.APIToken)
 
 	// Initialize storage
 	store, err := storage.NewStorage(cfg.Database.Path)
@@ -71,41 +69,17 @@ func runSync(cmd *cobra.Command, args []string) error {
 				entry.SyncedToJira = true
 				entry.JiraWorklogID = &worklog.ID
 				fmt.Println("  ✓ Synced to Jira")
+
+				// If Tempo is enabled, Jira automatically creates a Tempo worklog
+				if cfg.Tempo.Enabled {
+					entry.SyncedToTempo = true
+					fmt.Println("  ✓ Tempo worklog created automatically by Jira")
+				}
 			}
 		}
 
-		// Sync to Tempo if not synced and Tempo is enabled
-		if !entry.SyncedToTempo && cfg.Tempo.Enabled && cfg.Tempo.APIToken != "" {
-			log.Debug().Int64("id", entry.ID).Msg("Syncing to Tempo")
-
-			// Get issue details for issue ID
-			issue, err := jiraClient.GetIssue(entry.IssueKey)
-			if err != nil {
-				log.Error().Err(err).Int64("id", entry.ID).Msg("Failed to get issue details")
-				fmt.Printf("  ✗ Failed to get issue details: %v\n", err)
-				failureCount++
-			} else {
-				// Get current user's account ID
-				currentUser, err := jiraClient.GetCurrentUser()
-				if err != nil {
-					log.Error().Err(err).Int64("id", entry.ID).Msg("Failed to get current user")
-					fmt.Printf("  ✗ Failed to get current user: %v\n", err)
-					failureCount++
-				} else {
-					tempoWorklog, err := tempoClient.AddWorklog(issue.ID, currentUser.AccountID, entry.TimeSpentSeconds, entry.Started, entry.Label, entry.Comment)
-					if err != nil {
-						log.Error().Err(err).Int64("id", entry.ID).Msg("Failed to sync to Tempo")
-						fmt.Printf("  ✗ Failed to sync to Tempo: %v\n", err)
-						failureCount++
-					} else {
-						entry.SyncedToTempo = true
-						tempoID := fmt.Sprintf("%d", tempoWorklog.TempoWorklogID); entry.TempoWorklogID = &tempoID
-						fmt.Println("  ✓ Synced to Tempo")
-					}
-				}
-			}
-		} else if !cfg.Tempo.Enabled {
-			// Mark as synced if Tempo is not enabled
+		// Mark as synced if Tempo is not enabled
+		if !cfg.Tempo.Enabled && !entry.SyncedToTempo {
 			entry.SyncedToTempo = true
 		}
 

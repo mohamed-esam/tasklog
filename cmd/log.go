@@ -255,31 +255,17 @@ func runLog(cmd *cobra.Command, args []string) error {
 		entry.SyncedToJira = true
 		entry.JiraWorklogID = &worklog.ID
 		fmt.Println("✓ Logged to Jira")
+
+		// If Tempo is enabled, Jira automatically creates a Tempo worklog
+		// Mark as synced to Tempo since it's handled by Jira
+		if cfg.Tempo.Enabled {
+			entry.SyncedToTempo = true
+			fmt.Println("✓ Tempo worklog created automatically by Jira")
+		}
 	}
 
-	// Log to Tempo only if enabled separately
-	if cfg.Tempo.Enabled && cfg.Tempo.APIToken != "" {
-		log.Debug().Msg("Logging to Tempo")
-
-		// Get current user's account ID for Tempo
-		currentUser, err := jiraClient.GetCurrentUser()
-		if err != nil {
-			log.Error().Err(err).Msg("Failed to get current user")
-			fmt.Printf("⚠ Failed to get current user for Tempo: %v\n", err)
-		} else {
-			tempoWorklog, err := tempoClient.AddWorklog(selectedIssue.ID, currentUser.AccountID, timeSeconds, now, selectedLabel, comment)
-			if err != nil {
-				log.Error().Err(err).Msg("Failed to log to Tempo")
-				fmt.Printf("⚠ Failed to log to Tempo: %v\n", err)
-			} else {
-				entry.SyncedToTempo = true
-				tempoID := fmt.Sprintf("%d", tempoWorklog.TempoWorklogID)
-				entry.TempoWorklogID = &tempoID
-				fmt.Println("✓ Logged to Tempo")
-			}
-		}
-	} else {
-		// Mark as synced if Tempo is not enabled
+	// Mark as synced if Tempo is not enabled
+	if !cfg.Tempo.Enabled {
 		entry.SyncedToTempo = true
 	}
 
