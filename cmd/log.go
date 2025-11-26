@@ -7,6 +7,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 
+	"tasklog/internal/config"
 	"tasklog/internal/jira"
 	"tasklog/internal/storage"
 	"tasklog/internal/tempo"
@@ -22,23 +23,61 @@ var (
 )
 
 var logCmd = &cobra.Command{
-	Use:   "log",
+	Use:   "log [shortcut-name]",
 	Short: "Log time to a task",
 	Long: `Interactively log time to a Jira task. 
-You can use shortcuts, select from in-progress tasks, or search for tasks.`,
+You can use shortcuts, select from in-progress tasks, or search for tasks.
+
+Examples:
+  tasklog log              # Interactive mode
+  tasklog log daily        # Use 'daily' shortcut
+  tasklog log standup      # Use 'standup' shortcut
+  tasklog log -t PROJ-123  # Log to specific task`,
+	Args: cobra.MaximumNArgs(1),
 	RunE: runLog,
 }
 
 func init() {
 	rootCmd.AddCommand(logCmd)
 
-	logCmd.Flags().StringVarP(&shortcutName, "shortcut", "s", "", "Use a predefined shortcut")
 	logCmd.Flags().StringVarP(&taskKey, "task", "t", "", "Task key (e.g., PROJ-123)")
 	logCmd.Flags().StringVarP(&timeSpent, "time", "d", "", "Time spent (e.g., 2h 30m, 2.5h, 150m)")
 	logCmd.Flags().StringVarP(&label, "label", "l", "", "Work log label")
+
+	// Set custom usage template to show available shortcuts
+	logCmd.SetUsageFunc(logUsageFunc)
+}
+
+func logUsageFunc(cmd *cobra.Command) error {
+	// Print usage
+	fmt.Fprintf(cmd.OutOrStderr(), "Usage:\n  %s\n\n", cmd.UseLine())
+
+	// Try to load config and show available shortcuts
+	cfg, err := config.Load()
+	if err == nil && len(cfg.Shortcuts) > 0 {
+		fmt.Fprintf(cmd.OutOrStderr(), "Available Shortcuts:\n")
+		for _, sc := range cfg.Shortcuts {
+			timeInfo := ""
+			if sc.Time != "" {
+				timeInfo = fmt.Sprintf(" (%s)", sc.Time)
+			}
+			fmt.Fprintf(cmd.OutOrStderr(), "  %-15s %s - %s%s\n", sc.Name, sc.Task, sc.Label, timeInfo)
+		}
+		fmt.Fprintf(cmd.OutOrStderr(), "\n")
+	}
+
+	fmt.Fprintf(cmd.OutOrStderr(), "Flags:\n")
+	fmt.Fprintf(cmd.OutOrStderr(), "%s", cmd.Flags().FlagUsages())
+
+	return nil
 }
 
 func runLog(cmd *cobra.Command, args []string) error {
+	// Check if first argument is a shortcut name
+	if len(args) > 0 {
+		shortcutName = args[0]
+	}
+
 	// Load configuration
 	cfg, err := checkConfig()
 	if err != nil {
@@ -218,16 +257,29 @@ func runLog(cmd *cobra.Command, args []string) error {
 		fmt.Println("✓ Logged to Jira")
 	}
 
-	// Log to Tempo
-	log.Debug().Msg("Logging to Tempo")
-	tempoWorklog, err := tempoClient.AddWorklog(selectedIssue.Key, timeSeconds, now, selectedLabel, comment)
-	if err != nil {
-		log.Error().Err(err).Msg("Failed to log to Tempo")
-		fmt.Printf("⚠ Failed to log to Tempo: %v\n", err)
+	// Log to Tempo only if enabled separately
+	if cfg.Tempo.Enabled && cfg.Tempo.APIToken != "" {
+		log.Debug().Msg("Logging to Tempo")
+
+		// Get current user's account ID for Tempo
+		currentUser, err := jiraClient.GetCurrentUser()
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to get current user")
+			fmt.Printf("⚠ Failed to get current user for Tempo: %v\n", err)
+		} else {
+			tempoWorklog, err := tempoClient.AddWorklog(selectedIssue.ID, currentUser.AccountID, timeSeconds, now, selectedLabel, comment)
+			if err != nil {
+				log.Error().Err(err).Msg("Failed to log to Tempo")
+				fmt.Printf("⚠ Failed to log to Tempo: %v\n", err)
+			} else {
+				entry.SyncedToTempo = true
+				entry.TempoWorklogID = fmt.Sprintf("%d", tempoWorklog.TempoWorklogID)
+				fmt.Println("✓ Logged to Tempo")
+			}
+		}
 	} else {
+		// Mark as synced if Tempo is not enabled
 		entry.SyncedToTempo = true
-		entry.TempoWorklogID = fmt.Sprintf("%d", tempoWorklog.TempoWorklogID)
-		fmt.Println("✓ Logged to Tempo")
 	}
 
 	// Update storage with sync status

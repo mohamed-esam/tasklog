@@ -28,9 +28,10 @@ type JiraConfig struct {
 	ProjectKey string `yaml:"project_key"` // Project key to filter tasks (required)
 }
 
-// TempoConfig contains Tempo API configuration (required)
+// TempoConfig contains Tempo API configuration (optional)
 type TempoConfig struct {
-	APIToken string `yaml:"api_token"` // Tempo API token (required)
+	APIToken string `yaml:"api_token"` // Tempo API token (optional - only if logging separately to Tempo)
+	Enabled  bool   `yaml:"enabled"`   // Whether to log to Tempo separately (optional, default: false)
 }
 
 // LabelsConfig contains label filtering configuration (optional)
@@ -114,8 +115,9 @@ func (c *Config) Validate() error {
 	if c.Jira.ProjectKey == "" {
 		return fmt.Errorf("jira.project_key is required")
 	}
-	if c.Tempo.APIToken == "" {
-		return fmt.Errorf("tempo.api_token is required")
+	// Tempo is optional - only validate if enabled
+	if c.Tempo.Enabled && c.Tempo.APIToken == "" {
+		return fmt.Errorf("tempo.api_token is required when tempo.enabled is true")
 	}
 	return nil
 }

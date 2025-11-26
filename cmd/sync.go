@@ -74,19 +74,39 @@ func runSync(cmd *cobra.Command, args []string) error {
 			}
 		}
 
-		// Sync to Tempo if not synced
-		if !entry.SyncedToTempo {
+		// Sync to Tempo if not synced and Tempo is enabled
+		if !entry.SyncedToTempo && cfg.Tempo.Enabled && cfg.Tempo.APIToken != "" {
 			log.Debug().Int64("id", entry.ID).Msg("Syncing to Tempo")
-			tempoWorklog, err := tempoClient.AddWorklog(entry.IssueKey, entry.TimeSpentSeconds, entry.Started, entry.Label, entry.Comment)
+
+			// Get issue details for issue ID
+			issue, err := jiraClient.GetIssue(entry.IssueKey)
 			if err != nil {
-				log.Error().Err(err).Int64("id", entry.ID).Msg("Failed to sync to Tempo")
-				fmt.Printf("  ✗ Failed to sync to Tempo: %v\n", err)
+				log.Error().Err(err).Int64("id", entry.ID).Msg("Failed to get issue details")
+				fmt.Printf("  ✗ Failed to get issue details: %v\n", err)
 				failureCount++
 			} else {
-				entry.SyncedToTempo = true
-				entry.TempoWorklogID = fmt.Sprintf("%d", tempoWorklog.TempoWorklogID)
-				fmt.Println("  ✓ Synced to Tempo")
+				// Get current user's account ID
+				currentUser, err := jiraClient.GetCurrentUser()
+				if err != nil {
+					log.Error().Err(err).Int64("id", entry.ID).Msg("Failed to get current user")
+					fmt.Printf("  ✗ Failed to get current user: %v\n", err)
+					failureCount++
+				} else {
+					tempoWorklog, err := tempoClient.AddWorklog(issue.ID, currentUser.AccountID, entry.TimeSpentSeconds, entry.Started, entry.Label, entry.Comment)
+					if err != nil {
+						log.Error().Err(err).Int64("id", entry.ID).Msg("Failed to sync to Tempo")
+						fmt.Printf("  ✗ Failed to sync to Tempo: %v\n", err)
+						failureCount++
+					} else {
+						entry.SyncedToTempo = true
+						entry.TempoWorklogID = fmt.Sprintf("%d", tempoWorklog.TempoWorklogID)
+						fmt.Println("  ✓ Synced to Tempo")
+					}
+				}
 			}
+		} else if !cfg.Tempo.Enabled {
+			// Mark as synced if Tempo is not enabled
+			entry.SyncedToTempo = true
 		}
 
 		// Update storage

@@ -2,6 +2,8 @@
 
 An interactive CLI tool for tracking time on Jira tasks with seamless integration to Jira Cloud API and Tempo.
 
+> 🤖 **Built entirely with GitHub Copilot** - This project was created from scratch using AI pair programming, demonstrating the power of AI-assisted development.
+
 ## Features
 
 - 🎯 **Interactive Task Selection**: List your in-progress tasks or search for any task
@@ -92,8 +94,11 @@ jira:
   api_token: "your-jira-api-token"
   project_key: "PROJ"  # Project key to filter tasks (required)
 
+# Optional: Tempo configuration (only if logging separately to Tempo)
+# If your Jira uses Tempo for worklog tracking, leave this disabled
 tempo:
-  api_token: "your-tempo-api-token"  # Required
+  enabled: false  # Set to true only if you need separate Tempo logging
+  api_token: ""   # Only required if enabled is true
 
 # Optional: Filter labels that can be used for time logging
 # If not specified, labels will need to be entered manually
@@ -171,9 +176,17 @@ breaks:
 - Found in task IDs (e.g., `PROJ-123` → project key is `PROJ`)
 - Or check your Jira project settings
 
-#### Tempo Configuration
+#### Tempo Configuration (Optional)
 
-**Getting Tempo API Token:**
+**Important:** Tempo configuration is only needed if you want to log worklogs separately to both Jira AND Tempo. 
+
+If your Jira instance uses Tempo as the worklog tracker, you should leave `tempo.enabled: false` in your config. Worklogs logged to Jira will automatically appear in Tempo.
+
+**When to enable Tempo:**
+- You need separate worklog entries in both Jira and Tempo
+- Your organization has a specific workflow requiring dual logging
+
+**Getting Tempo API Token (only if enabling):**
 1. In Jira, go to **Tempo** in the top navigation
 2. Click **Settings** (gear icon)
 3. Select **API Integration** from the left sidebar
@@ -268,17 +281,17 @@ This will:
 
 ### Using Shortcuts
 
-Log time quickly using predefined shortcuts:
+Log time quickly using predefined shortcuts as subcommands:
 
 ```bash
 # Use shortcut with predefined time
-tasklog log --shortcut daily
+tasklog log daily
 
 # Use shortcut but override the time
-tasklog log --shortcut daily --time 45m
+tasklog log daily --time 45m
 
-# Short form
-tasklog log -s standup
+# Use different shortcut
+tasklog log standup
 ```
 
 ### Command-Line Flags
@@ -481,6 +494,22 @@ Alternative to config file:
 ## Contributing
 
 Contributions are welcome! Please feel free to submit issues or pull requests.
+
+## About This Project
+
+This entire project was built using **GitHub Copilot** as an AI pair programming partner. From initial concept to full implementation, every line of code, configuration, test, and documentation was created through natural language conversations and AI assistance.
+
+### What Was Built:
+- Complete Go CLI application with Cobra framework
+- Jira Cloud REST API v3 integration
+- Tempo API v4 integration  
+- Slack API integration for break notifications
+- SQLite local caching with sync recovery
+- Interactive prompts with survey library
+- Comprehensive test suite (83.9% coverage on core logic)
+- Full documentation and examples
+
+This project showcases how AI-assisted development can rapidly create production-ready tools with proper architecture, error handling, testing, and documentation.
 
 ## License
 

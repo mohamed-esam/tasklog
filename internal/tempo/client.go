@@ -29,12 +29,12 @@ func NewClient(apiToken string) *Client {
 
 // WorklogRequest represents a request to create a worklog in Tempo
 type WorklogRequest struct {
-	IssueKey         string             `json:"issueKey"`
+	IssueID          string             `json:"issueId"` // Numeric issue ID (required in v4)
 	TimeSpentSeconds int                `json:"timeSpentSeconds"`
 	StartDate        string             `json:"startDate"` // Format: YYYY-MM-DD
 	StartTime        string             `json:"startTime"` // Format: HH:MM:SS
 	Description      string             `json:"description,omitempty"`
-	AuthorAccountID  string             `json:"authorAccountId,omitempty"`
+	AuthorAccountID  string             `json:"authorAccountId"` // Required in v4
 	Attributes       []WorklogAttribute `json:"attributes,omitempty"`
 }
 
@@ -57,21 +57,23 @@ type WorklogResponse struct {
 }
 
 // AddWorklog adds a worklog entry to Tempo
-func (c *Client) AddWorklog(issueKey string, timeSpentSeconds int, started time.Time, label, description string) (*WorklogResponse, error) {
+func (c *Client) AddWorklog(issueID, authorAccountID string, timeSpentSeconds int, started time.Time, label, description string) (*WorklogResponse, error) {
 	log.Debug().
-		Str("issue", issueKey).
+		Str("issue_id", issueID).
 		Int("seconds", timeSpentSeconds).
 		Str("label", label).
 		Msg("Adding worklog to Tempo")
 
-	endpoint := "https://api.tempo.io/core/3/worklogs"
+	// Use Tempo API v4 endpoint
+	endpoint := "https://api.tempo.io/4/worklogs"
 
 	// Format date and time for Tempo
 	startDate := started.Format("2006-01-02")
 	startTime := started.Format("15:04:05")
 
 	payload := WorklogRequest{
-		IssueKey:         issueKey,
+		IssueID:          issueID,
+		AuthorAccountID:  authorAccountID,
 		TimeSpentSeconds: timeSpentSeconds,
 		StartDate:        startDate,
 		StartTime:        startTime,
@@ -96,7 +98,7 @@ func (c *Client) AddWorklog(issueKey string, timeSpentSeconds int, started time.
 	}
 
 	log.Info().
-		Str("issue", issueKey).
+		Str("issue_id", issueID).
 		Int("tempo_id", response.TempoWorklogID).
 		Str("time", formatSeconds(timeSpentSeconds)).
 		Msg("Worklog added to Tempo successfully")
@@ -111,8 +113,9 @@ func (c *Client) GetWorklogs(from, to time.Time) ([]WorklogResponse, error) {
 		Str("to", to.Format("2006-01-02")).
 		Msg("Fetching worklogs from Tempo")
 
+	// Use Tempo API v4 endpoint
 	endpoint := fmt.Sprintf(
-		"https://api.tempo.io/core/3/worklogs?from=%s&to=%s",
+		"https://api.tempo.io/4/worklogs?from=%s&to=%s",
 		from.Format("2006-01-02"),
 		to.Format("2006-01-02"),
 	)

@@ -36,6 +36,7 @@ func NewClient(baseURL, username, apiToken, projectKey string) *Client {
 
 // Issue represents a Jira issue
 type Issue struct {
+	ID     string      `json:"id"` // Numeric ID as string
 	Key    string      `json:"key"`
 	Fields IssueFields `json:"fields"`
 }
@@ -54,6 +55,7 @@ type IssueStatus struct {
 
 // IssueUser represents a Jira user
 type IssueUser struct {
+	AccountID    string `json:"accountId"`
 	DisplayName  string `json:"displayName"`
 	EmailAddress string `json:"emailAddress"`
 }
@@ -66,13 +68,13 @@ type SearchResult struct {
 
 // Worklog represents a Jira worklog entry
 type Worklog struct {
-	ID               string     `json:"id,omitempty"`
-	IssueID          string     `json:"issueId,omitempty"`
-	TimeSpent        string     `json:"timeSpent"`
-	TimeSpentSeconds int        `json:"timeSpentSeconds"`
-	Started          string     `json:"started"` // Format: 2024-11-11T10:00:00.000+0000
-	Comment          string     `json:"comment,omitempty"`
-	Author           *IssueUser `json:"author,omitempty"`
+	ID               string          `json:"id,omitempty"`
+	IssueID          string          `json:"issueId,omitempty"`
+	TimeSpent        string          `json:"timeSpent"`
+	TimeSpentSeconds int             `json:"timeSpentSeconds"`
+	Started          string          `json:"started"` // Format: 2024-11-11T10:00:00.000+0000
+	Comment          json.RawMessage `json:"comment,omitempty"`
+	Author           *IssueUser      `json:"author,omitempty"`
 }
 
 // GetInProgressIssues retrieves issues in progress for the current user
@@ -85,15 +87,17 @@ func (c *Client) GetInProgressIssues() ([]Issue, error) {
 	}
 	jql = fmt.Sprintf("%s ORDER BY updated DESC", jql)
 
-	params := url.Values{}
-	params.Add("jql", jql)
-	params.Add("fields", "summary,status,assignee")
-	params.Add("maxResults", "50")
+	// Use POST method with JSON body as recommended by Jira API v3
+	endpoint := fmt.Sprintf("%s/rest/api/3/search/jql", c.baseURL)
 
-	endpoint := fmt.Sprintf("%s/rest/api/3/search?%s", c.baseURL, params.Encode())
+	payload := map[string]interface{}{
+		"jql":        jql,
+		"fields":     []string{"summary", "status", "assignee"},
+		"maxResults": 50,
+	}
 
 	var result SearchResult
-	if err := c.doRequest("GET", endpoint, nil, &result); err != nil {
+	if err := c.doRequest("POST", endpoint, payload, &result); err != nil {
 		return nil, fmt.Errorf("failed to fetch in-progress issues: %w", err)
 	}
 
@@ -115,25 +119,36 @@ func (c *Client) GetIssue(issueKey string) (*Issue, error) {
 	return &issue, nil
 }
 
-// SearchIssues searches for issues by key
+// SearchIssues searches for issues by key or text
 func (c *Client) SearchIssues(searchKey string) ([]Issue, error) {
 	log.Debug().Str("search", searchKey).Msg("Searching issues")
 
-	jql := fmt.Sprintf("key = %s OR key ~ %s", searchKey, searchKey)
+	// Check if the search term looks like a Jira key (contains hyphen or is alphanumeric)
+	var jql string
+	if strings.Contains(searchKey, "-") || len(searchKey) < 3 {
+		// Looks like a key, search by key
+		jql = fmt.Sprintf("key = %s OR key ~ %s", searchKey, searchKey)
+	} else {
+		// Text search in summary and description
+		jql = fmt.Sprintf("text ~ \"%s*\" OR summary ~ \"%s*\"", searchKey, searchKey)
+	}
+
 	if c.projectKey != "" {
 		jql = fmt.Sprintf("(%s) AND project = %s", jql, c.projectKey)
 	}
-	jql = fmt.Sprintf("%s ORDER BY key DESC", jql)
+	jql = fmt.Sprintf("%s ORDER BY updated DESC", jql)
 
-	params := url.Values{}
-	params.Add("jql", jql)
-	params.Add("fields", "summary,status,assignee")
-	params.Add("maxResults", "20")
+	// Use POST method with JSON body as recommended by Jira API v3
+	endpoint := fmt.Sprintf("%s/rest/api/3/search/jql", c.baseURL)
 
-	endpoint := fmt.Sprintf("%s/rest/api/3/search?%s", c.baseURL, params.Encode())
+	payload := map[string]interface{}{
+		"jql":        jql,
+		"fields":     []string{"summary", "status", "assignee"},
+		"maxResults": 20,
+	}
 
 	var result SearchResult
-	if err := c.doRequest("GET", endpoint, nil, &result); err != nil {
+	if err := c.doRequest("POST", endpoint, payload, &result); err != nil {
 		return nil, fmt.Errorf("failed to search issues: %w", err)
 	}
 
@@ -217,6 +232,25 @@ func (c *Client) GetTodayWorklogs() ([]Worklog, error) {
 
 	log.Debug().Int("count", len(worklogs)).Msg("Retrieved today's worklogs")
 	return worklogs, nil
+}
+
+// GetCurrentUser retrieves the current user's account information
+func (c *Client) GetCurrentUser() (*IssueUser, error) {
+	log.Debug().Msg("Fetching current user information")
+
+	endpoint := fmt.Sprintf("%s/rest/api/3/myself", c.baseURL)
+
+	var user IssueUser
+	if err := c.doRequest("GET", endpoint, nil, &user); err != nil {
+		return nil, fmt.Errorf("failed to fetch current user: %w", err)
+	}
+
+	log.Debug().
+		Str("account_id", user.AccountID).
+		Str("display_name", user.DisplayName).
+		Msg("Retrieved current user")
+
+	return &user, nil
 }
 
 // doRequest performs an HTTP request to the Jira API

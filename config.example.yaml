@@ -8,9 +8,12 @@ jira:
   api_token: "your-jira-api-token"
   project_key: "PROJ"  # Project key to filter tasks
 
-# Required: Tempo configuration
+# Optional: Tempo configuration (only needed if logging separately to Tempo)
+# If your Jira uses Tempo for worklog tracking, leave this disabled
+# Worklogs will be automatically tracked in Tempo through Jira
 tempo:
-  api_token: "your-tempo-api-token"
+  enabled: false  # Set to true only if you need separate Tempo logging
+  api_token: ""   # Only required if enabled is true
 
 # Optional: Filter labels that can be used for time logging
 # If not specified or empty, all labels from Jira will be available
