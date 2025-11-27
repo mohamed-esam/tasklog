@@ -1,0 +1,26 @@
+# syntax=docker/dockerfile:1
+FROM alpine:3.19
+
+# Install ca-certificates for HTTPS requests
+RUN apk --no-cache add ca-certificates tzdata
+
+# Create non-root user
+RUN addgroup -g 1000 tasklog && \
+  adduser -D -u 1000 -G tasklog tasklog
+
+WORKDIR /app
+
+# Copy the binary from goreleaser
+COPY tasklog /usr/local/bin/tasklog
+
+# Switch to non-root user
+USER tasklog
+
+# Set environment variables
+ENV HOME=/home/tasklog
+
+# Create config directory
+RUN mkdir -p /home/tasklog/.tasklog
+
+ENTRYPOINT ["/usr/local/bin/tasklog"]
+CMD ["--help"]
