@@ -54,7 +54,7 @@ type DatabaseConfig struct {
 
 // SlackConfig contains Slack integration configuration (optional)
 type SlackConfig struct {
-	BotToken  string `yaml:"bot_token"`  // Slack bot token (optional)
+	UserToken string `yaml:"user_token"` // Slack user OAuth token (optional)
 	ChannelID string `yaml:"channel_id"` // Channel ID for break messages (optional)
 }
 

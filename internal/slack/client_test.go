@@ -5,24 +5,24 @@ import (
 )
 
 func TestNewClient(t *testing.T) {
-	botToken := "xoxb-test-token"
+	userToken := "xoxp-test-token"
 	channelID := "C1234567890"
 
-	client := NewClient(botToken, channelID)
+	client := NewClient(userToken, channelID)
 
 	if client == nil {
 		t.Fatal("Expected non-nil client")
 	}
 
-	if client.botToken != botToken {
-		t.Errorf("Expected botToken %s, got %s", botToken, client.botToken)
+	if client.userToken != userToken {
+		t.Errorf("Expected userToken %s, got %s", userToken, client.userToken)
 	}
 
 	if client.channelID != channelID {
 		t.Errorf("Expected channelID %s, got %s", channelID, client.channelID)
 	}
 
-	if client.client == nil {
+	if client.httpClient == nil {
 		t.Error("Expected non-nil HTTP client")
 	}
 }

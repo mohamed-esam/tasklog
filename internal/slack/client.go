@@ -12,17 +12,17 @@ import (
 
 // Client represents a Slack API client
 type Client struct {
-	botToken  string
-	channelID string
-	client    *http.Client
+	userToken  string
+	channelID  string
+	httpClient *http.Client
 }
 
-// NewClient creates a new Slack client
-func NewClient(botToken, channelID string) *Client {
+// NewClient creates a new Slack API client
+func NewClient(userToken, channelID string) *Client {
 	return &Client{
-		botToken:  botToken,
+		userToken: userToken,
 		channelID: channelID,
-		client: &http.Client{
+		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
 	}
@@ -54,10 +54,10 @@ func (c *Client) SetStatus(statusText, statusEmoji string, expirationMinutes int
 		return fmt.Errorf("failed to create status request: %w", err)
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.botToken))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.userToken))
 
-	resp, err := c.client.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to set status: %w", err)
 	}
@@ -104,10 +104,10 @@ func (c *Client) PostMessage(text string) error {
 		return fmt.Errorf("failed to create message request: %w", err)
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.botToken))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.userToken))
 
-	resp, err := c.client.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to post message: %w", err)
 	}

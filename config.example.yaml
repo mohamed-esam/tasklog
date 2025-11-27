@@ -50,7 +50,7 @@ database:
 
 # Optional: Slack integration for break notifications
 slack:
-  bot_token: "xoxb-your-slack-bot-token"
+  user_token: "xoxp-your-slack-user-token"  # User OAuth Token (not Bot Token)
   channel_id: "C1234567890"  # Channel ID for break messages
 
 # Optional: Define break types for quick break registration

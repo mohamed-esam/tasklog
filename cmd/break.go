@@ -76,14 +76,14 @@ func runBreak(cmd *cobra.Command, args []string) {
 	}
 
 	// Check if Slack is configured
-	if cfg.Slack.BotToken == "" || cfg.Slack.ChannelID == "" {
+	if cfg.Slack.UserToken == "" || cfg.Slack.ChannelID == "" {
 		log.Warn().Msg("Slack not configured. Break registered but Slack status not updated.")
 		fmt.Printf("⏸️  Taking a %s break for %d minutes\n", breakName, breakEntry.Duration)
 		return
 	}
 
 	// Create Slack client
-	slackClient := slack.NewClient(cfg.Slack.BotToken, cfg.Slack.ChannelID)
+	slackClient := slack.NewClient(cfg.Slack.UserToken, cfg.Slack.ChannelID)
 
 	// Calculate return time
 	returnTime := time.Now().Add(time.Duration(breakEntry.Duration) * time.Minute)
